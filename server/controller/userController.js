@@ -162,13 +162,31 @@ function updateTracker(req, res) {
         res.send(constructErrorMessage("payload is Mandatory", 400));
     } else {
         db.getUser(req.params.id, function(err, results) {
-            console.log(results.value);
-            results.value.tracker.push(req.body);
-            console.log(results.value);
-            db.updateUser(req.params.id, results.value, function(err, result) {
-                res.statusCode = 200;
-                res.send("Success");
-                auditlog(req, "Success update tracker");
+            var updateValue = {};
+            if (results != null) {
+                results.value.lastRecordedItem = results.value.lastRecordedItem + 1;
+                req.body.id = results.value.lastRecordedItem;
+                results.value.tracker.push(req.body);
+                updateValue = results.value;
+            } else {
+                var obj = {};
+                obj.tracker = [];
+                req.body.id = 1;
+                obj.lastRecordedItem = 1;
+                obj.tracker.push(req.body);
+                updateValue = obj;
+            }
+            console.log("before db " + updateValue);
+            db.updateUser(req.params.id, updateValue, function(err, result) {
+                if (!err) {
+                    res.statusCode = 200;
+                    res.send("Success");
+                    auditlog(req, "Success update tracker");
+                } else {
+                    res.statusCode = 500;
+                    res.send("Error Occured");
+                    auditlog(req, "Error Occured");
+                }
             });
         });
     }
@@ -182,10 +200,17 @@ function getTracker(req, res) {
         res.send(constructErrorMessage("payload is Mandatory", 400));
     } else {
         db.getUser(req.params.id, function(err, results) {
-            console.log(results.value);
-            res.statusCode = 200;
-            res.send(results.value);
-            auditlog(req, "Success of GetTracker");
+            console.log(err);
+            if (results != null) {
+                console.log(results.value);
+                res.statusCode = 200;
+                res.send(results.value);
+                auditlog(req, "Success of GetTracker");
+            } else {
+                res.statusCode = 500;
+                res.send("No record found");
+                auditlog(req, "No record found");
+            }
         });
     }
     logger.info("MethodExit: getTracker");
