@@ -28,6 +28,8 @@ module.exports = {
     couchBase: {
         server: 'localhost:8091',
         bucketName: 'bodyBuilding',
-        bucketPassword: 'star_2828'
+        bucketPassword: 'star_2828',
+        user: '',
+        userPassword: ''
     }
 }

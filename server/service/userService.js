@@ -27,11 +27,7 @@ module.exports = function() {
         user.addUser(req, res);     
 	});
 
-    app.post('/user/:id', function(req, res, next) {
-        console.log('user id : ' + req.params.id);
-        console.log('user payload : ' + req.body);
-        user.addUser(req, res);     
-    });
+    
 
     app.delete('/user/:id', function(req, res, next) {
         console.log('user id : ' + req.params.id);
@@ -73,8 +69,28 @@ module.exports = function() {
         user.updateTracker(req, res);
     });
 
-    app.get('/tracker/:id', function(req, res) {
-        user.getTracker(req, res);
+    //lastnyte App relates Apis
+
+    //LastNyte Login Apis
+
+    app.put('/lastnyte/user/:id', function(req, res) {
+        user.getUser(req, res);
+    });
+
+    app.post('/lastnyte/user/:id', function(req, res, next) {
+        user.insertUser(req, res);     
+    });
+
+    app.put('/lastnyte/tracker', function(req, res) {
+        user.updateTracerCas(req, res);
+    });
+
+    app.get('/lastnyte/tracker/:uid', function(req, res) {
+        user.getLastTracker(req, res);
+    });
+
+    app.get('/lastnyte/tracker/history/:uid', function(req, res) {
+        user.getTrackerHistory(req, res);
     });
 
 	return app;

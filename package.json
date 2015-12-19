@@ -30,6 +30,9 @@
     "mongodb": "1.1.8",
     "socket.io": "0.9.10",
     "backbone-tree-view": ">0.0.1",
-    "nodemailer": "~0.7.1"
+    "nodemailer": "~0.7.1",
+    "cassandra-driver": ">=0.0.0",
+    "node-uuid": ">=0.0.0",
+    "node-cassandra-cql@protocol2": ">=0.0.0"
   }
 }
