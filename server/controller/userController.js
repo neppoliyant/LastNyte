@@ -247,6 +247,7 @@ function insertUser(req, res) {
                 var uuid5 = uuid.v4();
                 console.log('valeus' + req.body.email);
                 console.log('valeus' + req.body.firstname);
+                req.body.uid = uuid5;
                 params = [uuid5, req.body.email, req.body.firstname, req.body.lastname, req.body.password, new Date()];
                 client.execute(query, params, function(err) {
                   if (err) {
@@ -256,7 +257,7 @@ function insertUser(req, res) {
                   } else {
                     console.log('Inserted user details in cassandra');
                     res.statusCode = 200;
-                    res.send(uuid5);
+                    res.send(req.body);
                     auditlog(req, "Success");
                   }
                 });
