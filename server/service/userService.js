@@ -85,7 +85,7 @@ module.exports = function() {
         user.updateTracerCas(req, res);
     });
 
-    app.get('/lastnyte/tracker/:uid', function(req, res) {
+    app.get('/lastnyte/tracker/:uid/:trackerId', function(req, res) {
         user.getLastTracker(req, res);
     });
 

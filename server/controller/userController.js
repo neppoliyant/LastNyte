@@ -337,9 +337,9 @@ function getLastTracker(req, res) {
     var query = '';
     var params = [];
 
-    query = 'select trackerid, blobAsText(trackerdata) as trackerdata, createdtime, isalive from tracker where uid = ?;';
+    query = 'select trackerid, blobAsText(trackerdata) as trackerdata, createdtime, isalive from tracker where uid = ? and trackerid = ?;';
 
-    params = [req.params.uid];
+    params = [req.params.uid, req.params.trackerId];
 
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
@@ -409,6 +409,10 @@ function updateTracerCas(req, res) {
 
                         var updatedData = JSON.parse(result.rows[0].trackerdata);
 
+                        result.rows[0].trackerdata.lastTrackItem = result.rows[0].trackerdata.lastTrackItem + 1;
+
+                        req.body.trackerData.tracker[0].id = result.rows[0].trackerdata.lastTrackItem;
+
                         console.log('Before updated data' + JSON.stringify(updatedData));
 
                         updatedData.tracker.push(req.body.trackerData);
@@ -442,6 +446,10 @@ function updateTracerCas(req, res) {
         var uuid5 = uuid.v4();
 
         var date = new Date();
+
+        req.body.trackerData.lastTrackItem = 1;
+
+        req.body.trackerData.tracker[0].id = 1;
 
         params = [req.body.uid, uuid5, true, JSON.stringify(req.body.trackerData), date];
 
