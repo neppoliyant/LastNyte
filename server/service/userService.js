@@ -89,7 +89,7 @@ module.exports = function() {
         user.getLastTracker(req, res);
     });
 
-    app.get('/lastnyte/tracker/history/:uid', function(req, res) {
+    app.get('/lastnyte/trackerhistory/:uid', function(req, res) {
         user.getTrackerHistory(req, res);
     });
 

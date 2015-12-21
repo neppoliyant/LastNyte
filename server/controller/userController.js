@@ -299,6 +299,8 @@ function getTrackerHistory(req, res) {
     var query = '';
     var params = [];
 
+    console.log('results : Inside getTrackerHistory');
+
     query = 'select trackerid, blobAsText(trackerdata) as trackerdata, createdtime, isalive from tracker where uid = ?;';
 
     params = [req.params.uid];
@@ -310,6 +312,7 @@ function getTrackerHistory(req, res) {
             auditlog(req, "Try Again");
         } else {
             var objArr = [];
+            console.log('results : ' + result.rows.length);
             if (result.rows.length > 0) {
                 for (var i=0;i<result.rows.length;i++) {
                     var obj = {};
