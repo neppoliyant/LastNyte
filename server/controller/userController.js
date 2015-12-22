@@ -374,73 +374,63 @@ function updateTracerCas(req, res) {
     console.log('Inside updateTracerCas');
     console.log('Inside updateTracerCas body' + JSON.stringify(req.body));
     if (req.body.trackerId) {
-        if (req.body.isAlive == false) {
-            query = 'update tracker set isAlive = ? where uid = ? and trackerid = ?;';
+        console.log('Inside updateTracerCas Select');
+        query = 'select blobAsText(trackerdata) as trackerdata, isalive from tracker where uid = ? and trackerid = ? ALLOW FILTERING;';
 
-            params = [false, req.body.uid, req.body.trackerId];
+        params = [req.body.uid, req.body.trackerId];
 
-            client.execute(query, params,{ prepare: true }, function(err, result) {
-                    if (err) {
-                        res.statusCode = 202;
-                        res.send(err);
-                        auditlog(req, "Try Again");
-                    } else {
-                        res.statusCode = 200;
-                        res.send("Updated Successfully Tracker Completed");
-                        auditlog(req, "Updated Successfully");
-                    }
-                });
-            return;
-        } else {
-            console.log('Inside updateTracerCas Select');
-            query = 'select blobAsText(trackerdata) as trackerdata, isalive from tracker where uid = ? and trackerid = ? ALLOW FILTERING;';
-
-            params = [req.body.uid, req.body.trackerId];
-
-            client.execute(query, params,{ prepare: true}, function(err, result) {
-                if (err) {
-                    res.statusCode = 202;
-                    res.send(err);
-                    auditlog(req, "Try Again");
+        client.execute(query, params,{ prepare: true}, function(err, result) {
+            if (err) {
+                res.statusCode = 202;
+                res.send(err);
+                auditlog(req, "Try Again");
+            } else {
+                if (!result.rows[0].isalive) {
+                    res.statusCode = 200;
+                    res.send("Completed Tracker");
+                    auditlog(req, "Completed Tracker");
                 } else {
-                    if (!result.rows[0].isalive) {
-                        res.statusCode = 200;
-                        res.send("Completed Tracker");
-                        auditlog(req, "Completed Tracker");
+                    console.log('Inside updateTracerCas Update' + result.rows[0].trackerdata);
+
+                    var updatedData = JSON.parse(result.rows[0].trackerdata);
+
+                    updatedData.lastTrackItem = updatedData.lastTrackItem + 1;
+
+                    req.body.trackerData.tracker[0].id = updatedData.lastTrackItem;
+
+                    console.log('Before updated data' + JSON.stringify(updatedData));
+
+                    updatedData.tracker.push(req.body.trackerData.tracker[0]);
+
+                    console.log('updated data' + JSON.stringify(updatedData));
+
+                    var query1 = '';
+
+                    var params1 = [];
+
+                    if (req.body.isAlive == false) { 
+                        query1 = 'update tracker set trackerdata = textAsBlob(?), isAlive=? where uid = ? and trackerid = ?;';
+                        params1 = [JSON.stringify(updatedData), false, req.body.uid, req.body.trackerId];
                     } else {
-                        console.log('Inside updateTracerCas Update' + result.rows[0].trackerdata);
-
-                        var updatedData = JSON.parse(result.rows[0].trackerdata);
-
-                        updatedData.lastTrackItem = updatedData.lastTrackItem + 1;
-
-                        req.body.trackerData.tracker[0].id = updatedData.lastTrackItem;
-
-                        console.log('Before updated data' + JSON.stringify(updatedData));
-
-                        updatedData.tracker.push(req.body.trackerData.tracker[0]);
-
-                        console.log('updated data' + JSON.stringify(updatedData));
-
-                        var query1 = 'update tracker set trackerdata = textAsBlob(?) where uid = ? and trackerid = ?;';
-
-                        var params1 = [JSON.stringify(updatedData), req.body.uid, req.body.trackerId];
-
-                        client.execute(query1, params1,{ prepare: true }, function(err, result) {
-                            if (err) {
-                                res.statusCode = 202;
-                                res.send(err);
-                                auditlog(req, "Try Again");
-                            } else {
-                                res.statusCode = 200;
-                                res.send("Updated Successfully");
-                                auditlog(req, "Updated Successfully");
-                            }
-                        });
+                        query1 = 'update tracker set trackerdata = textAsBlob(?) where uid = ? and trackerid = ?;';
+                        params1 = [JSON.stringify(updatedData), req.body.uid, req.body.trackerId];
                     }
+
+                    client.execute(query1, params1,{ prepare: true }, function(err, result) {
+                        if (err) {
+                            res.statusCode = 202;
+                            res.send(err);
+                            auditlog(req, "Try Again");
+                        } else {
+                            res.statusCode = 200;
+                            res.send("Updated Successfully");
+                            auditlog(req, "Updated Successfully");
+                        }
+                    });
                 }
-            }); 
-        }
+            }
+        }); 
+        
     } else {
         console.log('Inside updateTracerCas Inside');
 
