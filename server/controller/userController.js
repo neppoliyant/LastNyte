@@ -442,6 +442,8 @@ function updateTracerCas(req, res) {
 
         req.body.trackerData.lastTrackItem = 1;
 
+        req.body.trackerData.trackerName = req.body.trackerName;
+
         req.body.trackerData.tracker[0].id = 1;
 
         params = [req.body.uid, uuid5, true, JSON.stringify(req.body.trackerData), date];
