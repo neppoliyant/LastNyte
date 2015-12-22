@@ -412,13 +412,13 @@ function updateTracerCas(req, res) {
 
                         var updatedData = JSON.parse(result.rows[0].trackerdata);
 
-                        result.rows[0].trackerdata.lastTrackItem = result.rows[0].trackerdata.lastTrackItem + 1;
+                        updatedData.lastTrackItem = updatedData.lastTrackItem + 1;
 
-                        req.body.trackerData.tracker[0].id = result.rows[0].trackerdata.lastTrackItem;
+                        req.body.trackerData.tracker[0].id = updatedData.lastTrackItem;
 
                         console.log('Before updated data' + JSON.stringify(updatedData));
 
-                        updatedData.tracker.push(req.body.trackerData);
+                        updatedData.tracker.push(req.body.trackerData.tracker[0]);
 
                         console.log('updated data' + JSON.stringify(updatedData));
 
