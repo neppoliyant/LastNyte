@@ -266,6 +266,48 @@ function insertUser(req, res) {
     });
 }
 
+function UpdateUserCas(req, res) {
+    var query = '';
+    var params = [];
+
+    query = 'select * from lastnyte.users where uid=?;';
+
+    params = [req.params.id];
+
+    client.execute(query, params, function(err, result) {
+        if (err) {
+            res.statusCode = 500;
+            res.send(err);
+            auditlog(req, err);
+        } else {
+            if (result.rows.length > 0) {
+
+                query = 'update lastnyte.users set email=?, firstName=?, lastname=?, password=? where uid=?';
+
+                params = [req.body.email, req.body.firstname, req.body.lastname, req.body.password, uuid5];
+
+                client.execute(query, params, function(err) {
+                  if (err) {
+                    res.statusCode = 500;
+                    res.send("Failed");
+                    auditlog(req, "Failed");
+                  } else {
+                    console.log('Updated user details in cassandra');
+                    req.body.msg = 'Updated Successfully';
+                    res.statusCode = 200;
+                    res.send(req.body);
+                    auditlog(req, "Updated user details in cassandra");
+                  }
+                });
+            } else {
+                res.statusCode = 404;
+                res.send("User Not Found");
+                auditlog(req, "User Not Found");
+            }
+        }
+    });
+}
+
 function getUser(req, res) {
     var query = 'select * from users where email = ? and password= ? ALLOW FILTERING';
 
@@ -434,7 +476,7 @@ function updateTracerCas(req, res) {
     } else {
         console.log('Inside updateTracerCas Inside');
 
-        query = 'insert into tracker(uid, trackerid, isalive, trackerdata, createdtime) values(?, ?, ?, textAsBlob(?), ?);';
+        query = 'insert into tracker(uid, trackerid, isalive, trackerdata, createdtime, trackername) values(?, ?, ?, textAsBlob(?), ?, ?);';
 
         var uuid5 = uuid.v4();
 
@@ -446,7 +488,7 @@ function updateTracerCas(req, res) {
 
         req.body.trackerData.tracker[0].id = 1;
 
-        params = [req.body.uid, uuid5, true, JSON.stringify(req.body.trackerData), date];
+        params = [req.body.uid, uuid5, true, JSON.stringify(req.body.trackerData), date, req.body.trackerName];
 
         client.execute(query, params,{ prepare: true}, function(err, result) {
             if (err) {
@@ -477,5 +519,5 @@ module.exports.updateTracerCas = updateTracerCas;
 module.exports.getLastTracker = getLastTracker;
 module.exports.getTrackerHistory = getTrackerHistory;
 module.exports.getUser = getUser;
-
+module.exports.UpdateUserCas = UpdateUserCas;
 

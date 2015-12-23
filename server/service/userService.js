@@ -77,6 +77,10 @@ module.exports = function() {
         user.getUser(req, res);
     });
 
+    app.put('/lastnyte/userupdate/:id', function(req, res) {
+        user.UpdateUserCas(req, res);
+    });
+
     app.post('/lastnyte/user/:id', function(req, res, next) {
         user.insertUser(req, res);     
     });
