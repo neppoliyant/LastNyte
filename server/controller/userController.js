@@ -474,34 +474,36 @@ function updateTracerCas(req, res) {
         }); 
         
     } else {
-        console.log('Inside updateTracerCas Inside');
+        if (req.body.trackerName) {
+            console.log('Inside updateTracerCas Inside');
 
-        query = 'insert into tracker(uid, trackerid, isalive, trackerdata, createdtime, trackername) values(?, ?, ?, textAsBlob(?), ?, ?);';
+            query = 'insert into tracker(uid, trackerid, isalive, trackerdata, createdtime, trackername) values(?, ?, ?, textAsBlob(?), ?, ?);';
 
-        var uuid5 = uuid.v4();
+            var uuid5 = uuid.v4();
 
-        var date = new Date();
+            var date = new Date();
 
-        req.body.trackerData.lastTrackItem = 1;
+            req.body.trackerData.lastTrackItem = 1;
 
-        req.body.trackerData.trackerName = req.body.trackerName;
+            req.body.trackerData.trackerName = req.body.trackerName;
 
-        req.body.trackerData.tracker[0].id = 1;
+            req.body.trackerData.tracker[0].id = 1;
 
-        params = [req.body.uid, uuid5, true, JSON.stringify(req.body.trackerData), date, req.body.trackerName];
+            params = [req.body.uid, uuid5, true, JSON.stringify(req.body.trackerData), date, req.body.trackerName];
 
-        client.execute(query, params,{ prepare: true}, function(err, result) {
-            if (err) {
-                res.statusCode = 202;
-                res.send(err);
-                auditlog(req, "Try Again");
-            } else {
-                req.body.trackerId = uuid5;
-                res.statusCode = 200;
-                res.send(req.body);
-                auditlog(req, "Success Created first Record");
-            }
-        });
+            client.execute(query, params,{ prepare: true}, function(err, result) {
+                if (err) {
+                    res.statusCode = 202;
+                    res.send(err);
+                    auditlog(req, "Try Again");
+                } else {
+                    req.body.trackerId = uuid5;
+                    res.statusCode = 200;
+                    res.send(req.body);
+                    auditlog(req, "Success Created first Record");
+                }
+            });
+        }
     }
 }
 
