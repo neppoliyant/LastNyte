@@ -222,6 +222,8 @@ function getTracker(req, res) {
     logger.info("MethodExit: getTracker");
 }
 
+//---------------------------------Cassandra
+
 function insertUser(req, res) {
     var query = '';
     var params = [];
@@ -233,13 +235,13 @@ function insertUser(req, res) {
     client.execute(query, params, function(err, result) {
         if (err) {
             res.statusCode = 500;
-            res.send(err);
+            res.send(errorMsg(err, 500));
             auditlog(req, err);
         } else {
             if (result.rows.length > 0) {
                 console.log('Inserted user details in cassandra');
                 res.statusCode = 400;
-                res.send("User Already Exist");
+                res.send(errorMsg("User Already Exist", 404));
                 auditlog(req, "User Already Exist");
             } else {
                 query = 'insert into lastnyte.users(uid, email, firstname, lastname, password, createdtime) values(?,?,?,?,?,?)';
@@ -253,7 +255,7 @@ function insertUser(req, res) {
                 client.execute(query, params, function(err) {
                   if (err) {
                     res.statusCode = 500;
-                    res.send("Failed");
+                    res.send(errorMsg(err, 500));
                     auditlog(req, "Failed");
                   } else {
                     console.log('Inserted user details in cassandra');
@@ -278,7 +280,7 @@ function UpdateUserCas(req, res) {
     client.execute(query, params, function(err, result) {
         if (err) {
             res.statusCode = 500;
-            res.send(err);
+            res.send(errorMsg(err, 500));
             auditlog(req, err);
         } else {
             if (result.rows.length > 0) {
@@ -290,7 +292,7 @@ function UpdateUserCas(req, res) {
                 client.execute(query, params, function(err) {
                   if (err) {
                     res.statusCode = 500;
-                    res.send("Failed");
+                    res.send(errorMsg(err, 500));
                     auditlog(req, "Failed");
                   } else {
                     console.log('Updated user details in cassandra');
@@ -302,7 +304,7 @@ function UpdateUserCas(req, res) {
                 });
             } else {
                 res.statusCode = 404;
-                res.send("User Not Found");
+                res.send(errorMsg("User Not Found", 404));
                 auditlog(req, "User Not Found");
             }
         }
@@ -317,7 +319,7 @@ function getUser(req, res) {
     client.execute(query, params, function(err, result) {
       if (err) {
         res.statusCode = 500;
-        res.send("Failed");
+        res.send(errorMsg(err, 500));
         auditlog(req, "Failed");
       } else {
         var obj = {};
@@ -331,7 +333,7 @@ function getUser(req, res) {
             auditlog(req, "Success");
         } else {
             res.statusCode = 404;
-            res.send("No User Found");
+            res.send(errorMsg("No User Found", 404));
             auditlog(req, "Success");
         }
       }
@@ -351,7 +353,7 @@ function getTrackerHistory(req, res) {
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
             res.statusCode = 202;
-            res.send(err);
+            res.send(errorMsg(err, 202));
             auditlog(req, "Try Again");
         } else {
             var objArr = [];
@@ -372,7 +374,7 @@ function getTrackerHistory(req, res) {
                 auditlog(req, "Get Successfully");
             } else {
                 res.statusCode = 404;
-                res.send("No Record Found");
+                res.send(errorMsg("No Record Found", 404));
                 auditlog(req, "No Record Found");
             }
         }
@@ -390,7 +392,7 @@ function getLastTracker(req, res) {
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
             res.statusCode = 202;
-            res.send(err);
+            res.send(errorMsg(err, 202));
             auditlog(req, "Try Again");
         } else {
             if (result.rows.length > 0) {
@@ -404,7 +406,7 @@ function getLastTracker(req, res) {
                 auditlog(req, "Get Successfully");
             } else {
                 res.statusCode = 404;
-                res.send("No Record Found");
+                res.send(errorMsg("No Record Found", 404));
                 auditlog(req, "No Record Found");
             }
         }
@@ -425,7 +427,7 @@ function updateTracerCas(req, res) {
         client.execute(query, params,{ prepare: true}, function(err, result) {
             if (err) {
                 res.statusCode = 202;
-                res.send(err);
+                res.send(errorMsg(err, 202));
                 auditlog(req, "Try Again");
             } else {
                 if (!result.rows[0].isalive) {
@@ -462,7 +464,7 @@ function updateTracerCas(req, res) {
                     client.execute(query1, params1,{ prepare: true }, function(err, result) {
                         if (err) {
                             res.statusCode = 202;
-                            res.send(err);
+                            res.send(errorMsg(err, 202));
                             auditlog(req, "Try Again");
                         } else {
                             res.statusCode = 200;
@@ -495,7 +497,7 @@ function updateTracerCas(req, res) {
             client.execute(query, params,{ prepare: true}, function(err, result) {
                 if (err) {
                     res.statusCode = 202;
-                    res.send(err);
+                    res.send(errorMsg(err, 202));
                     auditlog(req, "Try Again");
                 } else {
                     req.body.trackerId = uuid5;
@@ -506,6 +508,14 @@ function updateTracerCas(req, res) {
             });
         }
     }
+}
+
+function errorMsg(errorMsg, statusCode) {
+    var obj = {};
+    obj.status = statusCode;
+    obj.hasError = true;
+    obj.message = errorMsg;
+    return obj;
 }
 
 module.exports.getUserbyId = getUserbyId;
