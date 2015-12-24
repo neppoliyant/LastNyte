@@ -284,7 +284,7 @@ function UpdateUserCas(req, res) {
 
                 query = 'update lastnyte.users set email=?, firstName=?, lastname=?, password=? where uid=?';
 
-                params = [req.body.email, req.body.firstname, req.body.lastname, req.body.password, uuid5];
+                params = [req.body.email, req.body.firstname, req.body.lastname, req.body.password, req.params.id];
 
                 client.execute(query, params, function(err) {
                   if (err) {
