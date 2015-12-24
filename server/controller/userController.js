@@ -248,7 +248,9 @@ function insertUser(req, res) {
                 console.log('valeus' + req.body.email);
                 console.log('valeus' + req.body.firstname);
                 req.body.uid = uuid5;
-                params = [uuid5, req.body.email, req.body.firstname, req.body.lastname, req.body.password, new Date()];
+                var date = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
+
+                params = [uuid5, req.body.email, req.body.firstname, req.body.lastname, req.body.password, date];
                 client.execute(query, params, function(err) {
                   if (err) {
                     res.statusCode = 500;
@@ -481,7 +483,7 @@ function updateTracerCas(req, res) {
 
             var uuid5 = uuid.v4();
 
-            var date = new Date();
+            var date = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
 
             req.body.trackerData.lastTrackItem = 1;
 
