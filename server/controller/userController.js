@@ -454,6 +454,7 @@ function updateTracerCas(req, res) {
                     var params1 = [];
 
                     if (req.body.isAlive == false) { 
+                        console.log('is Alive false' + req.body.isAlive);
                         query1 = 'update tracker set trackerdata = textAsBlob(?), isAlive=? where uid = ? and trackerid = ?;';
                         params1 = [JSON.stringify(updatedData), false, req.body.uid, req.body.trackerId];
                     } else {
@@ -506,6 +507,11 @@ function updateTracerCas(req, res) {
                     auditlog(req, "Success Created first Record");
                 }
             });
+        } else {
+            res.statusCode = 400;
+            res.send(errorMsg("No Tracker Name", 400));
+            auditlog(req, "No Tracker Name");
+
         }
     }
 }
