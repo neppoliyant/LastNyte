@@ -12,6 +12,7 @@ var cassandra = require('cassandra-driver');
 var async = require('async');
 var authProvider = new cassandra.auth.PlainTextAuthProvider('cassandra', 'cassandra');
 var uuid = require('node-uuid');
+var geocoder = require('node-geocoder')('google', 'http', null);
 
 var client = new cassandra.Client({contactPoints: ['96.119.183.251'], keyspace: 'lastnyte'});
 
@@ -443,40 +444,80 @@ function updateTracerCas(req, res) {
 
                     req.body.trackerData.tracker[0].id = updatedData.lastTrackItem;
 
-                    console.log('Before updated data' + JSON.stringify(updatedData));
+                    var location = getLocationName(req.body.trackerData.tracker[0].lat, req.body.trackerData.tracker[0].long);
 
-                    updatedData.tracker.push(req.body.trackerData.tracker[0]);
-
-                    console.log('updated data' + JSON.stringify(updatedData));
-
-                    var query1 = '';
-
-                    var params1 = [];
-
-                    if (req.body.isAlive == "false") { 
-                        console.log('is Alive false' + req.body.isAlive);
-                        query1 = 'update tracker set trackerdata = textAsBlob(?), isAlive=? where uid = ? and trackerid = ?;';
-                        params1 = [JSON.stringify(updatedData), false, req.body.uid, req.body.trackerId];
-                    } else {
-                        query1 = 'update tracker set trackerdata = textAsBlob(?) where uid = ? and trackerid = ?;';
-                        params1 = [JSON.stringify(updatedData), req.body.uid, req.body.trackerId];
-                    }
-
-                    client.execute(query1, params1,{ prepare: true }, function(err, result) {
+                    geocoder.reverse({lat:req.body.trackerData.tracker[0].lat, lon:req.body.trackerData.tracker[0].long}, function(err, response) {
                         if (err) {
-                            res.statusCode = 202;
-                            res.send(errorMsg(err, 202));
-                            auditlog(req, "Try Again");
+                            console.log('Location Name :' + location);
+                            console.log('Before updated data' + JSON.stringify(updatedData));
+
+                            updatedData.tracker.push(req.body.trackerData.tracker[0]);
+
+                            console.log('updated data' + JSON.stringify(updatedData));
+
+                            var query1 = '';
+
+                            var params1 = [];
+
+                            if (req.body.isAlive == "false") { 
+                                console.log('is Alive false' + req.body.isAlive);
+                                query1 = 'update tracker set trackerdata = textAsBlob(?), isAlive=? where uid = ? and trackerid = ?;';
+                                params1 = [JSON.stringify(updatedData), false, req.body.uid, req.body.trackerId];
+                            } else {
+                                query1 = 'update tracker set trackerdata = textAsBlob(?) where uid = ? and trackerid = ?;';
+                                params1 = [JSON.stringify(updatedData), req.body.uid, req.body.trackerId];
+                            }
+
+                            client.execute(query1, params1,{ prepare: true }, function(err, result) {
+                                var objResult = {};
+                                if (err) {
+                                    res.statusCode = 202;
+                                    res.send(errorMsg(err, 202));
+                                    auditlog(req, errorMsg(err, 202));
+                                } else {
+                                    res.statusCode = 200;
+                                    res.send("Updated Successfully");
+                                    auditlog(req, "Updated Successfully");
+                                }
+                            });
                         } else {
-                            res.statusCode = 200;
-                            res.send("Updated Successfully");
-                            auditlog(req, "Updated Successfully");
+                            console.log('Location Name :' + response[0].formattedAddress);
+                            console.log('Before updated data' + JSON.stringify(updatedData));
+                            req.body.trackerData.tracker[0].location = response[0].formattedAddress;
+                            updatedData.tracker.push(req.body.trackerData.tracker[0]);
+
+                            console.log('updated data' + JSON.stringify(updatedData));
+
+                            var query1 = '';
+
+                            var params1 = [];
+
+                            if (req.body.isAlive == "false") { 
+                                console.log('is Alive false' + req.body.isAlive);
+                                query1 = 'update tracker set trackerdata = textAsBlob(?), isAlive=? where uid = ? and trackerid = ?;';
+                                params1 = [JSON.stringify(updatedData), false, req.body.uid, req.body.trackerId];
+                            } else {
+                                query1 = 'update tracker set trackerdata = textAsBlob(?) where uid = ? and trackerid = ?;';
+                                params1 = [JSON.stringify(updatedData), req.body.uid, req.body.trackerId];
+                            }
+
+                            client.execute(query1, params1,{ prepare: true }, function(err, result) {
+                                var objResult = {};
+                                if (err) {
+                                    res.statusCode = 202;
+                                    res.send(errorMsg(err, 202));
+                                    auditlog(req, errorMsg(err, 202));
+                                } else {
+                                    res.statusCode = 200;
+                                    res.send("Updated Successfully");
+                                    auditlog(req, "Updated Successfully");
+                                }
+                            });
                         }
                     });
                 }
             }
         }); 
-        
     } else {
         if (req.body.trackerName) {
             console.log('Inside updateTracerCas Inside');
@@ -493,18 +534,39 @@ function updateTracerCas(req, res) {
 
             req.body.trackerData.tracker[0].id = 1;
 
-            params = [req.body.uid, uuid5, true, JSON.stringify(req.body.trackerData), req.body.createdTime, req.body.trackerName];
-
-            client.execute(query, params,{ prepare: true}, function(err, result) {
+            geocoder.reverse({lat:req.body.trackerData.tracker[0].lat, lon:req.body.trackerData.tracker[0].long}, function(err, response) {
                 if (err) {
-                    res.statusCode = 202;
-                    res.send(errorMsg(err, 202));
-                    auditlog(req, "Try Again");
+                    params = [req.body.uid, uuid5, true, JSON.stringify(req.body.trackerData), req.body.createdTime, req.body.trackerName];
+
+                    client.execute(query, params,{ prepare: true}, function(err, result) {
+                        if (err) {
+                            res.statusCode = 202;
+                            res.send(errorMsg(err, 202));
+                            auditlog(req, "Try Again");
+                        } else {
+                            req.body.trackerId = uuid5;
+                            res.statusCode = 200;
+                            res.send(req.body);
+                            auditlog(req, "Success Created first Record");
+                        }
+                    });
                 } else {
-                    req.body.trackerId = uuid5;
-                    res.statusCode = 200;
-                    res.send(req.body);
-                    auditlog(req, "Success Created first Record");
+                    console.log('Location Name :' + response[0].formattedAddress);
+                    req.body.trackerData.tracker[0].location = response[0].formattedAddress;
+                    params = [req.body.uid, uuid5, true, JSON.stringify(req.body.trackerData), req.body.createdTime, req.body.trackerName];
+
+                    client.execute(query, params,{ prepare: true}, function(err, result) {
+                        if (err) {
+                            res.statusCode = 202;
+                            res.send(errorMsg(err, 202));
+                            auditlog(req, "Try Again");
+                        } else {
+                            req.body.trackerId = uuid5;
+                            res.statusCode = 200;
+                            res.send(req.body);
+                            auditlog(req, "Success Created first Record");
+                        }
+                    });
                 }
             });
         } else {
@@ -516,11 +578,25 @@ function updateTracerCas(req, res) {
     }
 }
 
+function getLocationName(lat, long) {
+    geocoder.reverse({lat:45.767, lon:4.833}, function(err, res) {
+        return res.formattedAddress;
+    });
+}
+
 function errorMsg(errorMsg, statusCode) {
     var obj = {};
     obj.status = statusCode;
     obj.hasError = true;
     obj.message = errorMsg;
+    return obj;
+}
+
+function successMessage(msg, statusCode) {
+    var obj = {};
+    obj.status = statusCode;
+    obj.hasError = false;
+    obj.message = msg;
     return obj;
 }
 
