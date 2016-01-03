@@ -97,5 +97,15 @@ module.exports = function() {
         user.getTrackerHistory(req, res);
     });
 
+    app.put('/lastnytepicture/:id', function(req, res, next) {
+        console.log('user id : ' + req.params.id);
+        user.saveLastNytePicture(req, res);
+    });
+
+    app.get('/lastnytepicture/:id', function(req, res, next) {
+        console.log('user id : ' + req.params.id);
+        user.getLastNytePicture(req, res);
+    });
+
 	return app;
 }();

@@ -225,6 +225,34 @@ function getTracker(req, res) {
 
 //---------------------------------Cassandra
 
+function saveLastNytePicture(req, res) {
+    var dir = config.dir + req.params.id + ".png";
+    var data = req.body.imageData;
+    fs.writeFile(dir, data, 'binary', function(err){
+        if (err) throw err
+        console.log('File saved.')
+    });
+    res.statusCode = 200;
+    res.send("Success");
+    auditlog(req, "Success");
+}
+
+function getLastNytePicture(req, res) {
+    var dir = config.dir + req.params.id + ".png";
+    fs.readFile(dir, function (err, data) {
+        var data1 = {};
+        if (err) {
+            res.statusCode = 400;
+            res.send("Error");
+        } else {
+            res.statusCode = 200;
+            res.setHeader('content-type', 'image/png');
+            res.send(data);
+            auditlog(req, "Success");
+        }
+    });
+}
+
 function insertUser(req, res) {
     var query = '';
     var params = [];
@@ -615,4 +643,7 @@ module.exports.getLastTracker = getLastTracker;
 module.exports.getTrackerHistory = getTrackerHistory;
 module.exports.getUser = getUser;
 module.exports.UpdateUserCas = UpdateUserCas;
+module.exports.saveLastNytePicture = saveLastNytePicture;
+module.exports.getLastNytePicture = getLastNytePicture;
+
 
