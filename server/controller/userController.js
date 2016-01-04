@@ -228,6 +228,7 @@ function getTracker(req, res) {
 function saveLastNytePicture(req, res) {
     var dir = config.dir + req.params.id + ".png";
     var data = req.body.imageData;
+    console.log(JSON.stringify(req.body));
     fs.writeFile(dir, data, 'binary', function(err){
         if (err) throw err
         console.log('File saved.')

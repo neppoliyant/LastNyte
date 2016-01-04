@@ -7,8 +7,8 @@ doAuditLog = function (req, responsedata) {
     var useragent = null;
     var deviceID = null;
     var uid = null;
-    var uid = req.params.id || req.body || req.query.id;
-    logger.debug("Request headers :" + req.headers);
+    var uid = req.params.id || JSON.stringify(req.body) || req.query.id;
+    logger.debug("Request headers :" + JSON.stringify(req.headers));
     var customurl = req['host'] + req['originalUrl'];
     for (var item in req.headers) {
         if (item === 'authorization') {
