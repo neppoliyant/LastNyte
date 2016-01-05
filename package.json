@@ -33,6 +33,7 @@
     "nodemailer": "~0.7.1",
     "cassandra-driver": ">=0.0.0",
     "node-uuid": ">=0.0.0",
-    "node-geocoder": ">=0.0.0"
+    "node-geocoder": ">=0.0.0",
+    "apn": ">=0.0.0"
   }
 }

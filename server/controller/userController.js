@@ -629,6 +629,83 @@ function successMessage(msg, statusCode) {
     return obj;
 }
 
+//Notification Methods
+
+function getSubscription(req, res) {
+    var query = '';
+    var params = [];
+
+    query = 'select * from usersdevicedetails where uid = ? and devicetoken = ?;';
+
+    params = [req.params.uid, req.params.id];
+
+    client.execute(query, params,{ prepare: true}, function(err, result) {
+        if (err) {
+            res.statusCode = 202;
+            res.send(errorMsg(err, 202));
+            auditlog(req, "Try Again");
+        } else {
+            if (result.rows.length > 0) {
+                var obj = {};
+                obj.uid = result.rows[0].uid;
+                obj.deviceType = result.rows[0].devicetype;
+                obj.deviceToken = result.rows[0].devicetoken;
+                obj.notification = result.rows[0].notification
+                res.statusCode = 200;
+                res.send(obj);
+                auditlog(req, "Get Successfully");
+            } else {
+                res.statusCode = 404;
+                res.send(errorMsg("No Record Found", 404));
+                auditlog(req, "No Record Found");
+            }
+        }
+    });
+}
+
+function putSubscription(req, res) {
+    var query = '';
+    var params = [];
+
+    query = 'insert into usersdevicedetails(uid, devicetoken, devicetype, notification) values(?,?,?,?);';
+    console.log('request body' + JSON.stringify(req.body));
+    console.log('request uid' + req.body.uid);
+    params = [req.body.uid, req.body.deviceToken, req.body.deviceType, req.body.notification];
+
+    client.execute(query, params,{ prepare: true}, function(err, result) {
+        if (err) {
+            res.statusCode = 202;
+            res.send(errorMsg(err, 202));
+            auditlog(req, "Try Again");
+        } else {
+            res.statusCode = 200;
+            res.send(successMessage("Success", 200));
+            auditlog(req, "Successfully");
+        }
+    });
+}
+
+function deleteSubscription(req, res) {
+    var query = '';
+    var params = [];
+
+    query = 'delete from usersdevicedetails where uid =? and devicetoken = ?;';
+
+    params = [req.params.uid, req.params.id];
+
+    client.execute(query, params,{ prepare: true}, function(err, result) {
+        if (err) {
+            res.statusCode = 202;
+            res.send(errorMsg(err, 202));
+            auditlog(req, "Try Again");
+        } else {
+            res.statusCode = 200;
+            res.send(successMessage("Success Delete of record", 200));
+            auditlog(req, "Successfully");
+        }
+    });
+}
+
 module.exports.getUserbyId = getUserbyId;
 module.exports.addUser = addUser;
 module.exports.deleteUserbyId = deleteUserbyId;
@@ -646,5 +723,7 @@ module.exports.getUser = getUser;
 module.exports.UpdateUserCas = UpdateUserCas;
 module.exports.saveLastNytePicture = saveLastNytePicture;
 module.exports.getLastNytePicture = getLastNytePicture;
-
+module.exports.deleteSubscription = deleteSubscription;
+module.exports.putSubscription = putSubscription;
+module.exports.getSubscription = getSubscription;
 

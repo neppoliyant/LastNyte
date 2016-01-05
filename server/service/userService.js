@@ -4,6 +4,7 @@ module.exports = function() {
     var methodOverride = require('method-override');
     var user = require('../controller/userController');
     var userConnector = require('../connector/userConnector');
+    var rn = require('../controller/remoteNotification');
     var logger = require('../log/winston');
     app.use(express.json());
     app.use(express.urlencoded());
@@ -105,6 +106,29 @@ module.exports = function() {
     app.get('/lastnytepicture/:id', function(req, res, next) {
         console.log('user id : ' + req.params.id);
         user.getLastNytePicture(req, res);
+    });
+
+    app.put('/lastnyte/rn/:id', function(req, res, next) {
+        console.log('device id : ' + req.params.id);
+        console.log(__dirname);
+        rn.sendNotificationtoDevice(req, res);
+    });
+
+    //Notification
+    app.get('/lastnyte/subscription/:id/:uid', function(req, res, next) {
+        console.log('device token id : ' + req.params.id);
+        console.log('user id : ' + req.params.uid);
+        user.getSubscription(req, res);
+    });
+
+    app.put('/lastnyte/subscription/:id/:uid', function(req, res, next) {
+        console.log('device id : ' + req.params.id);
+        user.putSubscription(req, res);
+    });
+
+    app.delete('/lastnyte/subscription/:id/:uid', function(req, res, next) {
+        console.log('device id : ' + req.params.id);
+        user.deleteSubscription(req, res);
     });
 
 	return app;
