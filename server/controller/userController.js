@@ -845,14 +845,15 @@ function getTackFriends(req, res) {
                         else {
                             console.log(result.rows);
                             arrFinalUser.push(result.rows[0]);
+
+                            console.log('FinalUSer : ' + arrFinalUser);
+                            var obj = {};
+                            obj.friends = arrFinalUser;
+                            res.statusCode = 200;
+                            res.send(obj);
+                            auditlog(req, "Final Users Sent");
                         }
                     });
-                    console.log('FinalUSer : ' + arrFinalUser);
-                    var obj = {};
-                    obj.friends = arrFinalUser;
-                    res.statusCode = 200;
-                    res.send(obj);
-                    auditlog(req, "Final Users Sent");
                 }
             } else {
                 res.statusCode = 404;
