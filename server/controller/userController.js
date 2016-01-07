@@ -730,7 +730,7 @@ function inviteFriends(req, res) {
                 
                 query = 'insert into trackmapuser(uid, trackeruser) values(?,?);';
 
-                params = [req.param.uid, touuid];
+                params = [req.params.uid, touuid];
 
                 client.execute(query, params,{ prepare: true}, function(err1, result1) {
                     if (err1) {
