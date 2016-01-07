@@ -747,7 +747,7 @@ function inviteFriends(req, res) {
                         message.to = req.body.to;
                         message.touuid = req.body.fromuuid;
                         message.fromDeviceId = req.body.fromDeviceId;
-                        message.topic = "Invite";
+                        message.topic = "Invite";                                                                                   
 
                         rn.sendInviteNotification(message, function(err, response){
                             if (err) {
@@ -771,11 +771,11 @@ function inviteFriends(req, res) {
 function AcceptFriends(req, res) {
     var query = '';
     var params = [];
-
+console.log('accept body' + JSON.stringify(req.body));
     query = 'insert into trackmapuser(uid, trackeruser) values(?,?);';
 
-    params = [req.body.fromuuid, touuid];
-    console.log('accept body' + JSON.stringify(req.body));
+    params = [req.body.fromuuid, req.body.touuid];
+    
 
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
