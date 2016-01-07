@@ -14,6 +14,7 @@ var authProvider = new cassandra.auth.PlainTextAuthProvider('cassandra', 'cassan
 var uuid = require('node-uuid');
 var geocoder = require('node-geocoder')('google', 'http', null);
 var rn = require('./remoteNotification.js');
+var TimeUuid = require('cassandra-driver').types.TimeUuid;
 
 var client = new cassandra.Client({contactPoints: ['96.119.183.251'], keyspace: 'lastnyte'});
 
@@ -275,15 +276,15 @@ function insertUser(req, res) {
                 res.send(errorMsg("User Already Exist", 404));
                 auditlog(req, "User Already Exist");
             } else {
-                query = 'insert into lastnyte.users(uid, email, firstname, lastname, password, createdtime) values(?,?,?,?,?,?)';
+                query = 'insert into lastnyte.users(uid, email, firstname, lastname, password, createdtime) values(?,?,?,?,?,?);';
 
-                var uuid5 = uuid.v4();
-                console.log('valeus' + req.body.email);
-                console.log('valeus' + req.body.firstname);
+                //var uuid5 = uuid.v4();
+                var uuid5 = TimeUuid.fromDate(new Date());
+                var stringuuid = new String(uuid5);
                 req.body.uid = uuid5;
 
-                params = [uuid5, req.body.email, req.body.firstname, req.body.lastname, req.body.password, req.body.createdTime];
-                client.execute(query, params, function(err) {
+                params = [stringuuid, req.body.email, req.body.firstname, req.body.lastname, req.body.password, req.body.createdTime];
+                client.execute(query, params,{ prepare: true}, function(err) {
                   if (err) {
                     res.statusCode = 500;
                     res.send(errorMsg(err, 500));
@@ -827,34 +828,34 @@ function getTackFriends(req, res) {
             auditlog(req, "Try Again");
         } else {
             if (result.rows.length > 0) {
-                var arrUsers = '';
-                var arrFinalUser = [];
+                var arrUsers = "";
                 for (var i=0;i<result.rows.length;i++) {
-                    arrUsers = result.rows[i].trackeruser;
-
-                    query = 'select uid, email, firstname from users where uid in (?);';
-                    params = [arrUsers];
-
-                    client.execute(query, params,{ prepare: true}, function(err, result) {
-                        if (err) {
-                            console.log('accept error' + err);
-                            res.statusCode = 202;
-                            res.send(errorMsg(err, 202));
-                            auditlog(req, "Try Again");
-                        } 
-                        else {
-                            console.log(result.rows);
-                            arrFinalUser.push(result.rows[0]);
-
-                            console.log('FinalUSer : ' + arrFinalUser);
-                            var obj = {};
-                            obj.friends = arrFinalUser;
-                            res.statusCode = 200;
-                            res.send(obj);
-                            auditlog(req, "Final Users Sent");
-                        }
-                    });
+                    arrUsers = arrUsers + "'" + result.rows[i].trackeruser + "', ";
                 }
+
+                arrUsers = arrUsers.substring(0, arrUsers.length - 2);
+
+                console.log(arrUsers);
+
+                query = "select uid, email, firstname from users where uid in ("+ arrUsers +");";
+                params = [];
+
+                client.execute(query, params,{ prepare: true}, function(err, result) {
+                    if (err) {
+                        console.log('accept error' + err);
+                        res.statusCode = 202;
+                        res.send(errorMsg(err, 202));
+                        auditlog(req, "Try Again");
+                    } 
+                    else {
+                        console.log(result.rows);
+                        var obj = {};
+                        obj.friends = result.rows;
+                        res.statusCode = 200;
+                        res.send(obj);
+                        auditlog(req, "Final Users Sent");
+                    }
+                });
             } else {
                 res.statusCode = 404;
                 res.send(errorMsg("No users found", 404));
