@@ -739,13 +739,14 @@ function inviteFriends(req, res) {
                         res.send(errorMsg(err, 202));
                         auditlog(req, "Try Again");
                     } else {
+
                         var message = {};
                         message.toDeviceId = deviceid;
                         message.message = req.body.from + ' wants to track you...';
                         message.from = req.body.from;
                         message.to = req.body.to;
                         message.touuid = req.body.fromuuid;
-                        message.toDeviceId = req.body.fromDeviceId;
+                        message.fromDeviceId = req.body.fromDeviceId;
 
                         rn.sendInviteNotification(message, function(err, response){
                             if (err) {
