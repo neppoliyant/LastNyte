@@ -267,6 +267,7 @@ function insertUser(req, res) {
     client.execute(query, params, function(err, result) {
         if (err) {
             res.statusCode = 500;
+            console.log(err);
             res.send(errorMsg(err, 500));
             auditlog(req, err);
         } else {
@@ -280,13 +281,13 @@ function insertUser(req, res) {
 
                 //var uuid5 = uuid.v4();
                 var uuid5 = TimeUuid.fromDate(new Date());
-                var stringuuid = new String(uuid5);
                 req.body.uid = uuid5;
 
-                params = [stringuuid, req.body.email, req.body.firstname, req.body.lastname, req.body.password, req.body.createdTime];
+                params = [uuid5.toString(), req.body.email, req.body.firstname, req.body.lastname, req.body.password, req.body.createdTime];
                 client.execute(query, params,{ prepare: true}, function(err) {
                   if (err) {
                     res.statusCode = 500;
+                    console.log(err);
                     res.send(errorMsg(err, 500));
                     auditlog(req, "Failed");
                   } else {
