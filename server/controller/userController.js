@@ -259,7 +259,7 @@ function insertUser(req, res) {
     var query = '';
     var params = [];
 
-    query = 'select * from lastnyte.users where email=?;';
+    query = 'select * from lastnyte.users where email = ?;';
 
     params = [req.body.email];
 
@@ -715,8 +715,11 @@ function inviteFriends(req, res) {
 
     params = [req.body.to];
 
+    console.log('invite body' + req.body);
+
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
+            console.log('invite error' + err);
             res.statusCode = 202;
             res.send(errorMsg(err, 202));
             auditlog(req, "Try Again");
@@ -731,6 +734,7 @@ function inviteFriends(req, res) {
 
                 client.execute(query, params,{ prepare: true}, function(err1, result1) {
                     if (err1) {
+                        console.log('invite error' + err1);
                         res.statusCode = 202;
                         res.send(errorMsg(err, 202));
                         auditlog(req, "Try Again");
@@ -769,9 +773,11 @@ function AcceptFriends(req, res) {
     query = 'insert into trackmapuser(uid, trackeruser) values(?,?);';
 
     params = [req.body.fromuuid, touuid];
+    console.log('accept body' + req.body);
 
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
+            console.log('accept error' + err);
             res.statusCode = 202;
             res.send(errorMsg(err, 202));
             auditlog(req, "Try Again");
@@ -785,6 +791,7 @@ function AcceptFriends(req, res) {
 
             rn.sendInviteNotification(message, function(err1, response1){
                 if (err1) {
+                    console.log('accept error' + err1);
                     res.statusCode = 202;
                     res.send(errorMsg(err, 202));
                     auditlog(req, "Try Again");

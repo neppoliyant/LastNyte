@@ -69,6 +69,8 @@ function sendInviteNotification(message, callback) {
 	}
 
 	apnsConnection.sendNotification(note);
+
+	callback(false, 'Success');
     logger.info("MethodExit: sendInviteNotification");
 }
 
