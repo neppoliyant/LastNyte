@@ -764,6 +764,8 @@ function inviteFriends(req, res) {
                     }
                 });
 
+            } else {
+                //User not found
             }
         }
     });
@@ -808,6 +810,60 @@ console.log('accept body' + JSON.stringify(req.body));
         }
     });
 }
+
+function getTackFriends(req, res) {
+    var query = '';
+    var params = [];
+
+    query = 'select trackeruser from trackmapuser where uid = ?;';
+
+    params = [req.params.uid];
+
+    client.execute(query, params,{ prepare: true}, function(err, result) {
+        if (err) {
+            console.log('accept error' + err);
+            res.statusCode = 202;
+            res.send(errorMsg(err, 202));
+            auditlog(req, "Try Again");
+        } else {
+            if (result.rows.length > 0) {
+                var arrUsers = '';
+                var arrFinalUser = [];
+                for (var i=0;i<result.rows.length;i++) {
+                    arrUsers = result.rows[i].trackeruser;
+
+                    query = 'select uid, email, firstname from users where uid in (?);';
+                    params = [arrUsers];
+
+                    client.execute(query, params,{ prepare: true}, function(err, result) {
+                        if (err) {
+                            console.log('accept error' + err);
+                            res.statusCode = 202;
+                            res.send(errorMsg(err, 202));
+                            auditlog(req, "Try Again");
+                        } 
+                        else {
+                            console.log(result.rows);
+                            arrFinalUser.push(result.rows[0]);
+                        }
+                    });
+                    console.log('FinalUSer : ' + arrFinalUser);
+                    var obj = {};
+                    obj.friends = arrFinalUser;
+                    res.statusCode = 200;
+                    res.send(obj);
+                    auditlog(req, "Final Users Sent");
+                }
+            } else {
+                res.statusCode = 404;
+                res.send(errorMsg("No users found", 404));
+                auditlog(req, "No users found");
+            }
+        }
+    });
+}
+
+module.exports.getTackFriends = getTackFriends;
 module.exports.AcceptFriends = AcceptFriends;
 module.exports.inviteFriends = inviteFriends;
 module.exports.getUserbyId = getUserbyId;

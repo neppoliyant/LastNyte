@@ -141,5 +141,10 @@ module.exports = function() {
         user.AcceptFriends(req, res);
     });
 
+    app.get('/lastnyte/gettrackfriends/:uid', function(req, res, next) {
+        console.log('user id : ' + req.params.uid);
+        user.getTackFriends(req, res);
+    });
+
 	return app;
 }();
