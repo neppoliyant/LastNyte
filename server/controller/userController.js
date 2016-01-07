@@ -744,6 +744,7 @@ function inviteFriends(req, res) {
                         message.toDeviceId = deviceid;
                         message.message = req.body.from + ' wants to track you...';
                         message.from = req.body.from;
+                        message.fromuuid = req.params.uid;
                         message.to = req.body.to;
                         message.touuid = req.body.fromuuid;
                         message.fromDeviceId = req.body.fromDeviceId;
