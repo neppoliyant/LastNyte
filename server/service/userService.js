@@ -131,5 +131,15 @@ module.exports = function() {
         user.deleteSubscription(req, res);
     });
 
+    app.put('/lastnyte/invitefriends/:uid', function(req, res, next) {
+        console.log('device id : ' + req.params.uid);
+        user.inviteFriends(req, res);
+    });
+
+    app.put('/lastnyte/acceptfriends/:uid', function(req, res, next) {
+        console.log('device id : ' + req.params.uid);
+        user.AcceptFriends(req, res);
+    });
+
 	return app;
 }();

@@ -13,6 +13,7 @@ var async = require('async');
 var authProvider = new cassandra.auth.PlainTextAuthProvider('cassandra', 'cassandra');
 var uuid = require('node-uuid');
 var geocoder = require('node-geocoder')('google', 'http', null);
+var rn = require('./remoteNotification.js');
 
 var client = new cassandra.Client({contactPoints: ['96.119.183.251'], keyspace: 'lastnyte'});
 
@@ -706,6 +707,98 @@ function deleteSubscription(req, res) {
     });
 }
 
+function inviteFriends(req, res) {
+    var query = '';
+    var params = [];
+
+    query = 'select uid, devicetoken from usersdevicedetails where email = ?';
+
+    params = [req.body.to];
+
+    client.execute(query, params,{ prepare: true}, function(err, result) {
+        if (err) {
+            res.statusCode = 202;
+            res.send(errorMsg(err, 202));
+            auditlog(req, "Try Again");
+        } else {
+            if (result.rows.length > 0) {
+                var touuid = result.rows[0].uid;
+                var deviceid = result.rows[0].devicetoken;
+                
+                query = 'insert into trackmapuser(uid, trackeruser) values(?,?);';
+
+                params = [req.param.uid, touuid];
+
+                client.execute(query, params,{ prepare: true}, function(err1, result1) {
+                    if (err1) {
+                        res.statusCode = 202;
+                        res.send(errorMsg(err, 202));
+                        auditlog(req, "Try Again");
+                    } else {
+                        var message = {};
+                        message.toDeviceId = deviceid;
+                        message.message = req.body.from + ' wants to track you...';
+                        message.from = req.body.from;
+                        message.to = req.body.to;
+                        message.touuid = req.body.fromuuid;
+                        message.toDeviceId = req.body.fromDeviceId;
+
+                        rn.sendInviteNotification(message, function(err, response){
+                            if (err) {
+                                res.statusCode = 202;
+                                res.send(errorMsg(err, 202));
+                                auditlog(req, "Try Again");
+                            } else {
+                                res.statusCode = 200;
+                                res.send(successMessage("Success Invite of User", 200));
+                                auditlog(req, "Successfully Invitated");
+                            }
+                        });
+                    }
+                });
+
+            }
+        }
+    });
+}
+
+function AcceptFriends(req, res) {
+    var query = '';
+    var params = [];
+
+    query = 'insert into trackmapuser(uid, trackeruser) values(?,?);';
+
+    params = [req.body.fromuuid, touuid];
+
+    client.execute(query, params,{ prepare: true}, function(err, result) {
+        if (err) {
+            res.statusCode = 202;
+            res.send(errorMsg(err, 202));
+            auditlog(req, "Try Again");
+        } else {
+            var message = {};
+            message.toDeviceId = req.body.fromDeviceId;
+            message.message = req.body.from + ' accepts your invite!!!';
+            message.from = req.body.from;
+            message.to = req.body.to;
+            message.touuid = req.body.fromuuid;
+
+            rn.sendInviteNotification(message, function(err1, response1){
+                if (err1) {
+                    res.statusCode = 202;
+                    res.send(errorMsg(err, 202));
+                    auditlog(req, "Try Again");
+                } else {
+                    res.statusCode = 200;
+                    res.send(successMessage("Success Accept of User", 200));
+                    auditlog(req, "Successfully Accept Invitation");
+                }
+            });
+        }
+    });
+}
+module.exports.AcceptFriends = AcceptFriends;
+module.exports.inviteFriends = inviteFriends;
 module.exports.getUserbyId = getUserbyId;
 module.exports.addUser = addUser;
 module.exports.deleteUserbyId = deleteUserbyId;

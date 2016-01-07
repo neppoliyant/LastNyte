@@ -52,4 +52,25 @@ function sendNotificationtoDevice(req, res) {
     logger.info("MethodExit: sendNotificationtoDevice");
 }
 
+function sendInviteNotification(message, callback) {
+    logger.info("MethodEnter: sendInviteNotification");
+    var myDevice = new apn.Device(message.toDeviceId);
+	var body = message;
+	var note = new apn.Notification();
+	note.badge = 1;
+	note.sound = "notification-beep.wav";
+	note.alert = { "body" : body.message, "action-loc-key" : "Play" , "launch-image" : "mysplash.png"};
+	note.payload = message;
+	 
+	note.device = myDevice;
+
+	if (!apnsConnection) {
+		apnsConnection = new apn.Connection(options);
+	}
+
+	apnsConnection.sendNotification(note);
+    logger.info("MethodExit: sendInviteNotification");
+}
+
+module.exports.sendInviteNotification = sendInviteNotification;
 module.exports.sendNotificationtoDevice = sendNotificationtoDevice;
