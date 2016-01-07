@@ -747,6 +747,7 @@ function inviteFriends(req, res) {
                         message.to = req.body.to;
                         message.touuid = req.body.fromuuid;
                         message.fromDeviceId = req.body.fromDeviceId;
+                        message.topic = "Invite";
 
                         rn.sendInviteNotification(message, function(err, response){
                             if (err) {
@@ -789,6 +790,7 @@ function AcceptFriends(req, res) {
             message.from = req.body.from;
             message.to = req.body.to;
             message.touuid = req.body.fromuuid;
+            message.topic = "Accept";
 
             rn.sendInviteNotification(message, function(err1, response1){
                 if (err1) {
