@@ -668,10 +668,10 @@ function putSubscription(req, res) {
     var query = '';
     var params = [];
 
-    query = 'insert into usersdevicedetails(uid, devicetoken, devicetype, notification) values(?,?,?,?);';
+    query = 'insert into usersdevicedetails(uid, devicetoken, devicetype, notification, email) values(?,?,?,?,?);';
     console.log('request body' + JSON.stringify(req.body));
     console.log('request uid' + req.body.uid);
-    params = [req.body.uid, req.body.deviceToken, req.body.deviceType, req.body.notification];
+    params = [req.body.uid, req.body.deviceToken, req.body.deviceType, req.body.notification, req.body.email];
 
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
