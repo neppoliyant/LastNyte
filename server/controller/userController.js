@@ -715,7 +715,7 @@ function inviteFriends(req, res) {
 
     params = [req.body.to];
 
-    console.log('invite body' + JSON.stringfy(req.body));
+    console.log('invite body' + JSON.stringify(req.body));
 
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
@@ -773,7 +773,7 @@ function AcceptFriends(req, res) {
     query = 'insert into trackmapuser(uid, trackeruser) values(?,?);';
 
     params = [req.body.fromuuid, touuid];
-    console.log('accept body' + JSON.stringfy(req.body));
+    console.log('accept body' + JSON.stringify(req.body));
 
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
