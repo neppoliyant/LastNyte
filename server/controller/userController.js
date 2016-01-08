@@ -923,7 +923,7 @@ function updateUserLocation(req, res) {
     var query = '';
     var params = [];
 
-    query = 'insert into usercurrentLocation(uid, data, createdTime) values(?, ?, ?);';
+    query = 'insert into usercurrentLocation(uid, data, createdTime) values(?, textAsBlob(?), ?);';
 
     params = [req.params.uid, req.body, req.body.createdTime];
 
@@ -945,7 +945,7 @@ function getUserLocation(req, res) {
     var query = '';
     var params = [];
 
-    query = 'select * from usercurrentLocation where uid=?';
+    query = 'select uid, blobAsText(data) as data, createdTime from usercurrentLocation where uid=?';
 
     params = [req.params.uid];
 
