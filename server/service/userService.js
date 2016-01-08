@@ -148,12 +148,12 @@ module.exports = function() {
 
     app.put('/lastnyte/userlocation/:uid', function(req, res, next) {
         console.log('device id : ' + req.params.uid);
-        user.getUserLocation(req, res);
+        user.updateUserLocation(req, res);
     });
 
     app.get('/lastnyte/userlocation/:uid', function(req, res, next) {
         console.log('user id : ' + req.params.uid);
-        user.updateUserLocation(req, res);
+        user.getUserLocation(req, res);
     });
 
 
