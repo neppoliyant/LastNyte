@@ -959,7 +959,7 @@ function getUserLocation(req, res) {
             if (result.rows.length > 0) {
                 var obj = {};
                 obj.uid = req.params.uid;
-                obj.data = result.rows[0].data;
+                obj.data = JSON.parse(result.rows[0].data);
                 obj.createdTime = result.rows[0].createdTime;
                 res.statusCode = 200;
                 res.send(obj);
