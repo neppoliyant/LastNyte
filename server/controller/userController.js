@@ -925,7 +925,7 @@ function updateUserLocation(req, res) {
 
     query = 'insert into usercurrentLocation(uid, data, createdTime) values(?, textAsBlob(?), ?);';
 
-    params = [req.params.uid, req.body, req.body.createdTime];
+    params = [req.params.uid, JSON.stringify(req.body), req.body.createdTime];
 
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
