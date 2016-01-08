@@ -866,6 +866,115 @@ function getTackFriends(req, res) {
     });
 }
 
+function getTackFriendsLocation(req, res) {
+    var query = '';
+    var params = [];
+
+    query = 'select trackeruser from trackmapuser where uid = ?;';
+
+    params = [req.params.uid];
+
+    client.execute(query, params,{ prepare: true}, function(err, result) {
+        if (err) {
+            console.log('accept error' + err);
+            res.statusCode = 202;
+            res.send(errorMsg(err, 202));
+            auditlog(req, "Try Again");
+        } else {
+            if (result.rows.length > 0) {
+                var arrUsers = "";
+                for (var i=0;i<result.rows.length;i++) {
+                    arrUsers = arrUsers + "'" + result.rows[i].trackeruser + "', ";
+                }
+
+                arrUsers = arrUsers.substring(0, arrUsers.length - 2);
+
+                console.log(arrUsers);
+
+                query = "select uid, email, firstname from users where uid in ("+ arrUsers +");";
+                params = [];
+
+                client.execute(query, params,{ prepare: true}, function(err, result) {
+                    if (err) {
+                        console.log('accept error' + err);
+                        res.statusCode = 202;
+                        res.send(errorMsg(err, 202));
+                        auditlog(req, "Try Again");
+                    } 
+                    else {
+                        console.log(result.rows);
+                        var obj = {};
+                        obj.friends = result.rows;
+                        res.statusCode = 200;
+                        res.send(obj);
+                        auditlog(req, "Final Users Sent");
+                    }
+                });
+            } else {
+                res.statusCode = 404;
+                res.send(errorMsg("No users found", 404));
+                auditlog(req, "No users found");
+            }
+        }
+    });
+}
+
+function updateUserLocation(req, res) {
+    var query = '';
+    var params = [];
+
+    query = 'insert into usercurrentLocation(uid, data, createdTime) values(?, ?, ?);';
+
+    params = [req.params.uid, req.body, req.body.createdTime];
+
+    client.execute(query, params,{ prepare: true}, function(err, result) {
+        if (err) {
+            console.log('accept error' + err);
+            res.statusCode = 202;
+            res.send(errorMsg(err, 202));
+            auditlog(req, "Try Again");
+        } else {
+            res.statusCode = 200;
+            res.send(successMessage("Success Update of user location", 200));
+            auditlog(req, "Success Update of user location");
+        }
+    });
+}
+
+function getUserLocation(req, res) {
+    var query = '';
+    var params = [];
+
+    query = 'select * from usercurrentLocation where uid=?';
+
+    params = [req.params.uid];
+
+    client.execute(query, params,{ prepare: true}, function(err, result) {
+        if (err) {
+            console.log('accept error' + err);
+            res.statusCode = 202;
+            res.send(errorMsg(err, 202));
+            auditlog(req, "Try Again");
+        } else {
+            if (result.rows.length > 0) {
+                var obj = {};
+                obj.uid = req.params.uid;
+                obj.data = result.rows[0].data;
+                obj.createdTime = result.rows[0].createdTime;
+                res.statusCode = 200;
+                res.send(obj);
+                auditlog(req, "Success getting of user location");
+            } else {
+                res.statusCode = 404;
+                res.send(errorMsg("No users found", 404));
+                auditlog(req, "No users found");
+            }
+        }
+    });
+}
+
+module.exports.getUserLocation = getUserLocation;
+module.exports.updateUserLocation = updateUserLocation;
 module.exports.getTackFriends = getTackFriends;
 module.exports.AcceptFriends = AcceptFriends;
 module.exports.inviteFriends = inviteFriends;
