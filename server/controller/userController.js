@@ -15,16 +15,25 @@ var uuid = require('node-uuid');
 var geocoder = require('node-geocoder')('google', 'http', null);
 var rn = require('./remoteNotification.js');
 var TimeUuid = require('cassandra-driver').types.TimeUuid;
+var crypto = require('crypto');
 
 var client = new cassandra.Client({contactPoints: ['96.119.183.251'], keyspace: 'lastnyte'});
 
-var smtpTransport = nodemailer.createTransport("STMP", {
-   service: "Yahoo",
-   auth: {
-    user: 'neppoliyanthangavelu28@yahoo.com',
-    pass: 'star_2828'
-   }
+//var transporter = nodemailer.createTransport('smtps:virpal.v.singh@gmail.com:Lastnyte1@smtp.gmail.com');
+
+var transporter = nodemailer.createTransport("SMTP", {
+service: "Gmail",
+auth: {
+    user: "neppoliyant@gmail.com",
+    pass: "fire@2828"
+}
 });
+
+function randomValueHex (len) {
+    return crypto.randomBytes(Math.ceil(len/2))
+        .toString('hex') // convert to hexadecimal format
+        .slice(0,len);   // return required number of characters
+}
 
 function getUserbyId(req, res) {
     logger.info("MethodEnter: getUsers");
@@ -277,13 +286,15 @@ function insertUser(req, res) {
                 res.send(errorMsg("User Already Exist", 404));
                 auditlog(req, "User Already Exist");
             } else {
-                query = 'insert into lastnyte.users(uid, email, firstname, lastname, password, createdtime) values(?,?,?,?,?,?);';
+                var verificationCode = randomValueHex(6);
+
+                query = 'insert into lastnyte.users(uid, email, firstname, lastname, password, createdtime, verificationcode, verified) values(?,?,?,?,?,?,?,?);';
 
                 //var uuid5 = uuid.v4();
                 var uuid5 = TimeUuid.fromDate(new Date());
                 req.body.uid = uuid5;
 
-                params = [uuid5.toString(), req.body.email, req.body.firstname, req.body.lastname, req.body.password, req.body.createdTime];
+                params = [uuid5.toString(), req.body.email, req.body.firstname, req.body.lastname, req.body.password, req.body.createdTime, verificationCode, "false"];
                 client.execute(query, params,{ prepare: true}, function(err) {
                   if (err) {
                     res.statusCode = 500;
@@ -292,6 +303,7 @@ function insertUser(req, res) {
                     auditlog(req, "Failed");
                   } else {
                     console.log('Inserted user details in cassandra');
+                    sendEmailLastNyte(req.body.email, verificationCode);
                     res.statusCode = 200;
                     res.send(req.body);
                     auditlog(req, "Success");
@@ -299,6 +311,46 @@ function insertUser(req, res) {
                 });
             }
         }
+    });
+}
+
+function verificationUser(req, res) {
+    var query = 'select * from lastnyte.users where uid = ?;';
+
+    var params = [req.params.uid];
+
+    client.execute(query, params,{ prepare: true}, function(err, result) {
+      if (err) {
+        res.statusCode = 500;
+        res.send(errorMsg(err, 500));
+        auditlog(req, "Failed");
+      } else {
+        var obj = {};
+        if (result.rows[0]) {
+            if (result.rows[0].verificationcode == req.query.code) {
+                query = 'update users set verified = ? where uid = ? and email = ?';
+                params = ['true', req.params.uid, result.rows[0].email];
+                client.execute(query, params,{ prepare: true}, function(err, result) {
+                    if (err) {
+                        res.statusCode = 500;
+                        res.send(errorMsg(err, 500));
+                    } else {
+                        res.statusCode = 200;
+                        obj.verified = "true";
+                        res.send(obj);
+                    }
+                });
+            } else {
+                res.statusCode = 400;
+                res.send(errorMsg("Not a valid code", 400));
+                auditlog(req, "Success");
+            }
+        } else {
+            res.statusCode = 404;
+            res.send(errorMsg("No User Found", 404));
+            auditlog(req, "Success");
+        }
+      }
     });
 }
 
@@ -361,6 +413,7 @@ function getUser(req, res) {
             obj.lastName = result.rows[0].lastname;
             obj.email = result.rows[0].email;
             obj.uid = result.rows[0].uid;
+            obj.verified = result.rows[0].verified;
             res.statusCode = 200;
             res.send(obj);
             auditlog(req, "Success");
@@ -1037,6 +1090,28 @@ function getUserLocation(req, res) {
     });
 }
 
+function sendEmailLastNyte(to, code) {
+    var msg = 'Please enter the code to verify account : ' + code;
+    var mailOptions = {
+        from: 'neppoliyant@gmail.com', // sender address
+        to: to, // list of receivers
+        subject: 'Verification for whereabouts', // Subject line
+        text: msg, // plaintext body
+        html: '<b>Welcome to WhereAbouts</b> </br> </br><b> ' + msg + '</b>' // html body
+    };
+
+    transporter.sendMail(mailOptions, function(error, info){
+        if(error){
+            res.statusCode = 400;
+            res.send(error);
+            return console.log(error);
+        }
+    });
+}
+
+
+module.exports.verificationUser = verificationUser;
+module.exports.sendEmailLastNyte = sendEmailLastNyte;
 module.exports.getUserLocation = getUserLocation;
 module.exports.updateUserLocation = updateUserLocation;
 module.exports.getTackFriends = getTackFriends;

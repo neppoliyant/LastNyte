@@ -156,6 +156,9 @@ module.exports = function() {
         user.getUserLocation(req, res);
     });
 
+    app.get('/lastnyte/validateuser/:uid', function(req, res, next) {
+        user.verificationUser(req, res);
+    });
 
 	return app;
 }();
