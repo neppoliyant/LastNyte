@@ -803,44 +803,64 @@ function AcceptFriends(req, res) {
     var params = [];
     console.log('accept body' + JSON.stringify(req.body));
 
-    var queries = [
-                  {
-                    query: 'insert into trackmapuser(uid, trackeruser, pendingaprroval) values(?,?,?);',
-                    params: [req.body.fromuuid, req.body.touuid, "true"]
-                  },
-                  {
-                    query: 'insert into trackmapuser(uid, trackeruser, pendingaprroval) values(?,?,?);',
-                    params: [req.body.touuid, req.body.fromuuid, "true"]
-                  }
-                ];
-    
-    client.batch(queries,{ prepare: true}, function(err) {
+    query = 'select devicetoken from usersdevicedetails where uid = ?';
+
+    params = [req.body.touuid];
+
+    client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
-            console.log('accept error' + err);
+            console.log('invite error' + err);
             res.statusCode = 202;
             res.send(errorMsg(err, 202));
             auditlog(req, "Try Again");
         } else {
-            var message = {};
-            message.toDeviceId = req.body.fromDeviceId;
-            message.message = req.body.from + ' accepts your invite!!!';
-            message.from = req.body.from;
-            message.to = req.body.to;
-            message.touuid = req.body.fromuuid;
-            message.topic = "Accept";
+            if (result.rows.length > 0) {
+                var queries = [
+                              {
+                                query: 'insert into trackmapuser(uid, trackeruser, pendingaprroval) values(?,?,?);',
+                                params: [req.body.fromuuid, req.body.touuid, "true"]
+                              },
+                              {
+                                query: 'insert into trackmapuser(uid, trackeruser, pendingaprroval) values(?,?,?);',
+                                params: [req.body.touuid, req.body.fromuuid, "true"]
+                              }
+                            ];
+                
+                client.batch(queries,{ prepare: true}, function(err) {
+                    if (err) {
+                        console.log('accept error' + err);
+                        res.statusCode = 202;
+                        res.send(errorMsg(err, 202));
+                        auditlog(req, "Try Again");
+                    } else {
+                        var message = {};
+                        message.toDeviceId = result.rows[0].devicetoken;
+                        message.message = req.body.from + ' accepts your invite!!!';
+                        message.from = req.body.from;
+                        message.to = req.body.to;
+                        message.touuid = req.body.fromuuid;
+                        message.topic = "Accept";
 
-            rn.sendInviteNotification(message, function(err1, response1){
-                if (err1) {
-                    console.log('accept error' + err1);
-                    res.statusCode = 202;
-                    res.send(errorMsg(err, 202));
-                    auditlog(req, "Try Again");
-                } else {
-                    res.statusCode = 200;
-                    res.send(successMessage("Success Accept of User", 200));
-                    auditlog(req, "Successfully Accept Invitation");
-                }
-            });
+                        rn.sendInviteNotification(message, function(err1, response1){
+                            if (err1) {
+                                console.log('accept error' + err1);
+                                res.statusCode = 202;
+                                res.send(errorMsg(err, 202));
+                                auditlog(req, "Try Again");
+                            } else {
+                                res.statusCode = 200;
+                                res.send(successMessage("Success Accept of User", 200));
+                                auditlog(req, "Successfully Accept Invitation");
+                            }
+                        });
+                    }
+                });
+            } else {
+                console.log('invite error' + err);
+                res.statusCode = 404;
+                res.send(errorMsg("User not part of lastnyte app", 404));
+                auditlog(req, "User not part of lastnyte app");
+            }
         }
     });
 }
