@@ -907,7 +907,7 @@ function getTackFriends(req, res) {
                             for (var j=0;j<result.rows.length;j++) {
                                 var item1 = result.rows[j];
                                 if (item1.trackeruser == item.uid) {
-                                    item.pendingaprroval = item1.pendingaprroval;
+                                    item.pendingapproval = item1.pendingaprroval;
                                     objarr.push(item);
                                     break;
                                 }
