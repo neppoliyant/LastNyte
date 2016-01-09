@@ -729,45 +729,70 @@ function inviteFriends(req, res) {
             if (result.rows.length > 0) {
                 var touuid = result.rows[0].uid;
                 var deviceid = result.rows[0].devicetoken;
-                
-                query = 'insert into trackmapuser(uid, trackeruser) values(?,?);';
+
+
+                query = 'select trackeruser from trackmapuser where uid = ? and trackeruser = ?';
 
                 params = [req.params.uid, touuid];
 
-                client.execute(query, params,{ prepare: true}, function(err1, result1) {
-                    if (err1) {
-                        console.log('invite error' + err1);
+                client.execute(query, params,{ prepare: true}, function(err, result) {
+                    if (err) {
+                        console.log('invite error' + err);
                         res.statusCode = 202;
                         res.send(errorMsg(err, 202));
                         auditlog(req, "Try Again");
                     } else {
+                        if (result.rows.length > 0) { 
+                            res.statusCode = 201;
+                            res.send(errorMsg("Already Invite Sent", 201));
+                            auditlog(req, "Already Invite Sent");
+                            return;
+                        } else {
+                            var queries = [
+                              {
+                                query: 'insert into trackmapuser(uid, trackeruser, pendingaprroval) values(?,?,?);',
+                                params: [touuid, req.params.uid, "false"]
+                              }
+                            ];
 
-                        var message = {};
-                        message.toDeviceId = deviceid;
-                        message.message = req.body.from + ' wants to track you...';
-                        message.from = req.body.from;
-                        message.fromuuid = req.params.uid;
-                        message.to = req.body.to;
-                        message.touuid = req.body.fromuuid;
-                        message.fromDeviceId = req.body.fromDeviceId;
-                        message.topic = "Invite";                                                                                   
+                            client.batch(queries,{ prepare: true}, function(err1) {
+                                if (err1) {
+                                    console.log('invite error' + err1);
+                                    res.statusCode = 202;
+                                    res.send(errorMsg(err, 202));
+                                    auditlog(req, "Try Again");
+                                } else {
+                                    var message = {};
+                                    message.toDeviceId = deviceid;
+                                    message.message = req.body.from + ' wants to track you...';
+                                    message.from = req.body.from;
+                                    message.fromuuid = req.params.uid;
+                                    message.to = req.body.to;
+                                    message.touuid = req.body.fromuuid;
+                                    message.fromDeviceId = req.body.fromDeviceId;
+                                    message.topic = "Invite";                                                                                   
 
-                        rn.sendInviteNotification(message, function(err, response){
-                            if (err) {
-                                res.statusCode = 202;
-                                res.send(errorMsg(err, 202));
-                                auditlog(req, "Try Again");
-                            } else {
-                                res.statusCode = 200;
-                                res.send(successMessage("Success Invite of User", 200));
-                                auditlog(req, "Successfully Invitated");
-                            }
-                        });
+                                    rn.sendInviteNotification(message, function(err, response){
+                                        if (err) {
+                                            res.statusCode = 202;
+                                            res.send(errorMsg(err, 202));
+                                            auditlog(req, "Try Again");
+                                        } else {
+                                            res.statusCode = 200;
+                                            res.send(successMessage("Success Invite of User", 200));
+                                            auditlog(req, "Successfully Invitated");
+                                        }
+                                    });
+                                }
+                            });
+                        }
                     }
                 });
-
             } else {
-                //User not found
+                console.log('invite error' + err);
+                res.statusCode = 404;
+                res.send(errorMsg("User not part of lastnyte app", 404));
+                auditlog(req, "User not part of lastnyte app");
             }
         }
     });
@@ -776,13 +801,20 @@ function inviteFriends(req, res) {
 function AcceptFriends(req, res) {
     var query = '';
     var params = [];
-console.log('accept body' + JSON.stringify(req.body));
-    query = 'insert into trackmapuser(uid, trackeruser) values(?,?);';
+    console.log('accept body' + JSON.stringify(req.body));
 
-    params = [req.body.fromuuid, req.body.touuid];
+    var queries = [
+                  {
+                    query: 'insert into trackmapuser(uid, trackeruser, pendingaprroval) values(?,?,?);',
+                    params: [req.body.fromuuid, req.body.touuid, "true"]
+                  },
+                  {
+                    query: 'insert into trackmapuser(uid, trackeruser, pendingaprroval) values(?,?,?);',
+                    params: [req.body.touuid, req.body.fromuuid, "true"]
+                  }
+                ];
     
-
-    client.execute(query, params,{ prepare: true}, function(err, result) {
+    client.batch(queries,{ prepare: true}, function(err) {
         if (err) {
             console.log('accept error' + err);
             res.statusCode = 202;
@@ -817,7 +849,7 @@ function getTackFriends(req, res) {
     var query = '';
     var params = [];
 
-    query = 'select trackeruser from trackmapuser where uid = ?;';
+    query = 'select trackeruser, pendingaprroval from trackmapuser where uid = ?;';
 
     params = [req.params.uid];
 
@@ -841,7 +873,7 @@ function getTackFriends(req, res) {
                 query = "select uid, email, firstname from users where uid in ("+ arrUsers +");";
                 params = [];
 
-                client.execute(query, params,{ prepare: true}, function(err, result) {
+                client.execute(query, params,{ prepare: true}, function(err, result1) {
                     if (err) {
                         console.log('accept error' + err);
                         res.statusCode = 202;
@@ -849,9 +881,21 @@ function getTackFriends(req, res) {
                         auditlog(req, "Try Again");
                     } 
                     else {
-                        console.log(result.rows);
+                        var objarr = [];
+                        for (var i=0;i<result1.rows.length;i++) {
+                            var item = result1.rows[i];
+                            for (var j=0;j<result.rows.length;j++) {
+                                var item1 = result.rows[j];
+                                if (item1.trackeruser == item.uid) {
+                                    item.pendingaprroval = item1.pendingaprroval;
+                                    objarr.push(item);
+                                    break;
+                                }
+                            }
+                        }
+                        console.log(objarr);
                         var obj = {};
-                        obj.friends = result.rows;
+                        obj.friends = objarr;
                         res.statusCode = 200;
                         res.send(obj);
                         auditlog(req, "Final Users Sent");

@@ -62,7 +62,6 @@ function sendInviteNotification(message, callback) {
 	note.sound = "notification-beep.wav";
 	note.alert = { "body" : body.message, "action-loc-key" : "Play" , "launch-image" : "mysplash.png"};
 	note.payload = message;
-	note.topic = "Invite";
 	 
 	note.device = myDevice;
 
