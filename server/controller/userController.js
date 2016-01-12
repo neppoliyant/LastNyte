@@ -6,7 +6,7 @@ var utils = require('../utils/appUtils');
 var fs = require('fs');
 var config = require('../config/config.js');
 var logger = require('../log/winston');
-var auditlog = require('../log/auditlog').auditlog;
+var auditlogRes = require('../log/auditlog').auditlogNew;
 var nodemailer = require('nodemailer');
 var cassandra = require('cassandra-driver');
 var async = require('async');
@@ -35,205 +35,6 @@ function randomValueHex (len) {
         .slice(0,len);   // return required number of characters
 }
 
-function getUserbyId(req, res) {
-    logger.info("MethodEnter: getUsers");
-    if (!req.params.id) {
-        res.statusCode = 400;
-        res.send(constructErrorMessage("id is Mandatory", 400));
-    } else {
-        db.getUser(req.params.id, function(err, result) {
-            if (err || !result) {
-                res.statusCode = 500;
-                res.send(constructErrorMessage(err, 500));
-                auditlog(req, err);
-            } else {
-                res.statusCode = 200;
-                res.send(result.value);
-                auditlog(req, result.value);
-            }
-        });
-    }
-    logger.info("MethodExit: getUsers");
-}
-
-function addUser(req, res) {
-    logger.info("MethodEnter: addUser");
-    if (!req.body) {
-        res.statusCode = 400;
-        res.send(constructErrorMessage("payload is Mandatory", 400));
-    } else {
-        db.updateUser(req.params.id, req.body, function(err, result) {
-            if (err || !result) {
-                res.statusCode = 500;
-                res.send(constructErrorMessage(err, 500));
-                auditlog(req, err);
-            } else {
-                res.statusCode = 200;
-                res.send(constructSuccessMessage("Updated/Inserted Successfully", 200, result));
-                auditlog(req, "Success");
-            }
-        });
-    }
-    logger.info("MethodExit: addUser");
-}
-
-function register(req, res) {
-    logger.info("MethodEnter: register");
-    if (!req.body) {
-        res.statusCode = 400;
-        res.send(constructErrorMessage("payload is Mandatory", 400));
-    } else {
-        var id = utils.userToken(req.body.email, req.body.password);
-        console.log("User Added : " + id + "Email : " + req.body.email);
-        logger.info("User Added : " + id + "Email : " + req.body.email);
-        req.body.id = id;
-        req.body._id = id;
-        req.body.isValid = true;
-        db.updateUser(id, req.body, function(err, result) {
-            if (err || !result) {
-                res.statusCode = 500;
-                res.send(constructErrorMessage(err, 500));
-                auditlog(req, err);
-            } else {
-                res.statusCode = 200;
-                res.send(req.body);
-                auditlog(req, res.body);
-            }
-        });
-    }
-    logger.info("MethodExit: register");
-}
-
-function login(req, res) {
-    if (!req.body) {
-        res.statusCode = 400;
-        res.send(constructErrorMessage("payload is Mandatory", 400));
-    } else {
-        var id = utils.userToken(req.body.email, req.body.password);
-        console.log("user id : " + id);
-        req.body.id = id;
-        db.getUser(id, function(err, result) {
-            if (err || !result) {
-                res.statusCode = 500;
-                res.send(constructErrorMessage(err, 500));
-                auditlog(req, err);
-            } else {
-                res.statusCode = 200;
-                res.send(result.value);
-                auditlog(req, result.value);
-            }
-        });
-    }
-}
-
-function deleteUserbyId(req, res) {
-    if (!req.params.id) {
-        res.statusCode = 400;
-        res.send(constructErrorMessage("id is Mandatory", 400));
-    } else {
-        db.deleteUser(req.params.id, function(err, result) {
-            if (err || !result) {
-                res.statusCode = 500;
-                res.send(constructErrorMessage(err, 500));
-                auditlog(req, err);
-            } else {
-                res.statusCode = 200;
-                res.send(constructSuccessMessage("Deleted Successfully", 200, result));
-                auditlog(req, "Delete Successfully");
-            }
-        });
-    }
-}
-
-function savePicture(req, res) {
-    var dir = config.dir + req.params.id + ".png";
-    var data = req.body.body.imageData;
-    fs.writeFile(dir, data, 'binary', function(err){
-        if (err) throw err
-        console.log('File saved.')
-    });
-    res.statusCode = 200;
-    res.send("Success");
-    auditlog(req, "Success");
-}
-
-function getPicture(req, res) {
-    var dir = config.dir + req.params.id + ".png";
-    fs.readFile(dir, function (err, data) {
-        var data1 = {};
-        if (err) {
-            res.statusCode = 400;
-            res.send("Error");
-        } else {
-            res.statusCode = 200;
-            res.setHeader('content-type', 'image/png');
-            res.send(data);
-            auditlog(req, "Success");
-        }
-    });
-}
-
-function updateTracker(req, res) {
-    logger.info("MethodEnter: updateTracker");
-    if (!req.body) {
-        res.statusCode = 400;
-        res.send(constructErrorMessage("payload is Mandatory", 400));
-    } else {
-        db.getUser(req.params.id, function(err, results) {
-            var updateValue = {};
-            if (results != null) {
-                results.value.lastRecordedItem = results.value.lastRecordedItem + 1;
-                req.body.id = results.value.lastRecordedItem;
-                results.value.tracker.push(req.body);
-                updateValue = results.value;
-            } else {
-                var obj = {};
-                obj.tracker = [];
-                req.body.id = 1;
-                obj.lastRecordedItem = 1;
-                obj.tracker.push(req.body);
-                updateValue = obj;
-            }
-            console.log("before db " + updateValue);
-            db.updateUser(req.params.id, updateValue, function(err, result) {
-                if (!err) {
-                    res.statusCode = 200;
-                    res.send("Success");
-                    auditlog(req, "Success update tracker");
-                } else {
-                    res.statusCode = 500;
-                    res.send("Error Occured");
-                    auditlog(req, "Error Occured");
-                }
-            });
-        });
-    }
-    logger.info("MethodExit: updateTracker");
-}
-
-function getTracker(req, res) {
-    logger.info("MethodEnter: getTracker");
-    if (!req.body) {
-        res.statusCode = 400;
-        res.send(constructErrorMessage("payload is Mandatory", 400));
-    } else {
-        db.getUser(req.params.id, function(err, results) {
-            console.log(err);
-            if (results != null) {
-                console.log(results.value);
-                res.statusCode = 200;
-                res.send(results.value);
-                auditlog(req, "Success of GetTracker");
-            } else {
-                res.statusCode = 500;
-                res.send("No record found");
-                auditlog(req, "No record found");
-            }
-        });
-    }
-    logger.info("MethodExit: getTracker");
-}
-
 //---------------------------------Cassandra
 
 function saveLastNytePicture(req, res) {
@@ -246,7 +47,7 @@ function saveLastNytePicture(req, res) {
     });
     res.statusCode = 200;
     res.send("Success");
-    auditlog(req, "Success");
+    auditlogRes(req, 200, "Picture Saved Successfully");
 }
 
 function getLastNytePicture(req, res) {
@@ -256,11 +57,12 @@ function getLastNytePicture(req, res) {
         if (err) {
             res.statusCode = 400;
             res.send("Error");
+            auditlogRes(req, 400, err);
         } else {
             res.statusCode = 200;
             res.setHeader('content-type', 'image/png');
             res.send(data);
-            auditlog(req, "Success");
+            auditlogRes(req, 200, "Success getting of picture");
         }
     });
 }
@@ -276,21 +78,18 @@ function insertUser(req, res) {
     client.execute(query, params, function(err, result) {
         if (err) {
             res.statusCode = 500;
-            console.log(err);
             res.send(errorMsg(err, 500));
-            auditlog(req, err);
+            auditlogRes(req, 500, err);
         } else {
             if (result.rows.length > 0) {
-                console.log('Inserted user details in cassandra');
-                res.statusCode = 400;
+                res.statusCode = 404;
                 res.send(errorMsg("User Already Exist", 404));
-                auditlog(req, "User Already Exist");
+                auditlogRes(req, 404, "User Already Exist");
             } else {
                 var verificationCode = randomValueHex(6);
 
                 query = 'insert into lastnyte.users(uid, email, firstname, lastname, password, createdtime, verificationcode, verified) values(?,?,?,?,?,?,?,?);';
 
-                //var uuid5 = uuid.v4();
                 var uuid5 = TimeUuid.fromDate(new Date());
                 req.body.uid = uuid5;
 
@@ -300,16 +99,36 @@ function insertUser(req, res) {
                     res.statusCode = 500;
                     console.log(err);
                     res.send(errorMsg(err, 500));
-                    auditlog(req, "Failed");
+                    auditlogRes(req, 500, err);
                   } else {
-                    console.log('Inserted user details in cassandra');
                     sendEmailLastNyte(req.body.email, verificationCode);
                     res.statusCode = 200;
                     res.send(req.body);
-                    auditlog(req, "Success");
+                    auditlogRes(req, 200, successMessage("Success Inserting of data", 200));
                   }
                 });
             }
+        }
+    });
+}
+
+function deleteUser(req, res) {
+    var query = '';
+    var params = [];
+
+    query = 'delete from lastnyte.users where uid = ?;';
+
+    params = [req.params.uid];
+
+    client.execute(query, params, function(err, result) {
+        if (err) {
+            res.statusCode = 500;
+            res.send(errorMsg(err, 500));
+            auditlogRes(req, 500, err);
+        } else {
+            res.statusCode = 200;
+            res.send(successMessage("Deleted User", 200));
+            auditlogRes(req, 200, successMessage("Deleted User", 200));
         }
     });
 }
@@ -323,7 +142,7 @@ function verificationUser(req, res) {
       if (err) {
         res.statusCode = 500;
         res.send(errorMsg(err, 500));
-        auditlog(req, "Failed");
+        auditlogRes(req, 500, err);
       } else {
         var obj = {};
         if (result.rows[0]) {
@@ -334,21 +153,23 @@ function verificationUser(req, res) {
                     if (err) {
                         res.statusCode = 500;
                         res.send(errorMsg(err, 500));
+                        auditlogRes(req, 500, err);
                     } else {
                         res.statusCode = 200;
                         obj.verified = "true";
                         res.send(obj);
+                        auditlogRes(req, 200, successMessage("Success Verification of data", 200));
                     }
                 });
             } else {
                 res.statusCode = 400;
                 res.send(errorMsg("Not a valid code", 400));
-                auditlog(req, "Success");
+                auditlogRes(req, 400, "Not a valid code");
             }
         } else {
             res.statusCode = 404;
             res.send(errorMsg("No User Found", 404));
-            auditlog(req, "Success");
+            auditlogRes(req, 404, "No User Found");
         }
       }
     });
@@ -366,7 +187,7 @@ function UpdateUserCas(req, res) {
         if (err) {
             res.statusCode = 500;
             res.send(errorMsg(err, 500));
-            auditlog(req, err);
+            auditlogRes(req, 500, err);
         } else {
             if (result.rows.length > 0) {
 
@@ -378,19 +199,18 @@ function UpdateUserCas(req, res) {
                   if (err) {
                     res.statusCode = 500;
                     res.send(errorMsg(err, 500));
-                    auditlog(req, "Failed");
+                    auditlogRes(req, 500, err);
                   } else {
-                    console.log('Updated user details in cassandra');
                     req.body.msg = 'Updated Successfully';
                     res.statusCode = 200;
                     res.send(req.body);
-                    auditlog(req, "Updated user details in cassandra");
+                    auditlogRes(req, 200, successMessage("Updated user details in cassandra", 200));
                   }
                 });
             } else {
                 res.statusCode = 404;
                 res.send(errorMsg("User Not Found", 404));
-                auditlog(req, "User Not Found");
+                auditlogRes(req, 404, errorMsg("User Not Found", 404));
             }
         }
     });
@@ -405,7 +225,7 @@ function getUser(req, res) {
       if (err) {
         res.statusCode = 500;
         res.send(errorMsg(err, 500));
-        auditlog(req, "Failed");
+        auditlogRes(req, 500, err);
       } else {
         var obj = {};
         if (result.rows[0]) {
@@ -416,11 +236,11 @@ function getUser(req, res) {
             obj.verified = result.rows[0].verified;
             res.statusCode = 200;
             res.send(obj);
-            auditlog(req, "Success");
+            auditlogRes(req, 200, successMessage("Success getting of user details", 200));
         } else {
             res.statusCode = 404;
             res.send(errorMsg("No User Found", 404));
-            auditlog(req, "Success");
+            auditlogRes(req, 500, "No User Found");
         }
       }
     });
@@ -438,9 +258,9 @@ function getTrackerHistory(req, res) {
 
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
-            res.statusCode = 202;
-            res.send(errorMsg(err, 202));
-            auditlog(req, "Try Again");
+            res.statusCode = 500;
+            res.send(errorMsg(err, 500));
+            auditlogRes(req, 500, err);
         } else {
             var objArr = [];
             console.log('results : ' + result.rows.length);
@@ -457,11 +277,11 @@ function getTrackerHistory(req, res) {
                 finalObj.history = objArr;
                 res.statusCode = 200;
                 res.send(finalObj);
-                auditlog(req, "Get Successfully");
+                auditlogRes(req, 200, successMessage("Success getting of Tracker history", 200));
             } else {
                 res.statusCode = 404;
                 res.send(errorMsg("No Record Found", 404));
-                auditlog(req, "No Record Found");
+                auditlogRes(req, 404, "No Record Found");
             }
         }
     });
@@ -477,9 +297,9 @@ function getLastTracker(req, res) {
 
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
-            res.statusCode = 202;
-            res.send(errorMsg(err, 202));
-            auditlog(req, "Try Again");
+            res.statusCode = 500;
+            res.send(errorMsg(err, 500));
+            auditlogRes(req, 500, err);
         } else {
             if (result.rows.length > 0) {
                 var obj = {};
@@ -489,11 +309,11 @@ function getLastTracker(req, res) {
                 obj.isAlive = result.rows[0].isalive
                 res.statusCode = 200;
                 res.send(obj);
-                auditlog(req, "Get Successfully");
+                auditlogRes(req, 200, successMessage("Success getting of Tracker data", 200));
             } else {
                 res.statusCode = 404;
                 res.send(errorMsg("No Record Found", 404));
-                auditlog(req, "No Record Found");
+                auditlogRes(req, 404, "No Record Found");
             }
         }
     });
@@ -502,26 +322,22 @@ function getLastTracker(req, res) {
 function updateTracerCas(req, res) {
     var query = '';
     var params = [];
-    console.log('Inside updateTracerCas');
-    console.log('Inside updateTracerCas body' + JSON.stringify(req.body));
     if (req.body.trackerId) {
-        console.log('Inside updateTracerCas Select');
         query = 'select blobAsText(trackerdata) as trackerdata, isalive from tracker where uid = ? and trackerid = ? ALLOW FILTERING;';
 
         params = [req.body.uid, req.body.trackerId];
 
         client.execute(query, params,{ prepare: true}, function(err, result) {
             if (err) {
-                res.statusCode = 202;
-                res.send(errorMsg(err, 202));
-                auditlog(req, "Try Again");
+                res.statusCode = 500;
+                res.send(errorMsg(err, 500));
+                auditlogRes(req, 500, err);
             } else {
                 if (!result.rows[0].isalive) {
                     res.statusCode = 200;
-                    res.send("Completed Tracker");
-                    auditlog(req, "Completed Tracker");
+                    res.send(successMessage("Completed Tracker", 200));
+                    auditlogRes(req, 200, successMessage("Completed Tracker", 200));
                 } else {
-                    console.log('Inside updateTracerCas Update' + result.rows[0].trackerdata);
 
                     var updatedData = JSON.parse(result.rows[0].trackerdata);
 
@@ -533,19 +349,14 @@ function updateTracerCas(req, res) {
 
                     geocoder.reverse({lat:req.body.trackerData.tracker[0].lat, lon:req.body.trackerData.tracker[0].long}, function(err, response) {
                         if (err) {
-                            console.log('Location Name :' + location);
-                            console.log('Before updated data' + JSON.stringify(updatedData));
 
                             updatedData.tracker.push(req.body.trackerData.tracker[0]);
-
-                            console.log('updated data' + JSON.stringify(updatedData));
 
                             var query1 = '';
 
                             var params1 = [];
 
                             if (req.body.isAlive == "false") { 
-                                console.log('is Alive false' + req.body.isAlive);
                                 query1 = 'update tracker set trackerdata = textAsBlob(?), isAlive=? where uid = ? and trackerid = ?;';
                                 params1 = [JSON.stringify(updatedData), false, req.body.uid, req.body.trackerId];
                             } else {
@@ -556,22 +367,18 @@ function updateTracerCas(req, res) {
                             client.execute(query1, params1,{ prepare: true }, function(err, result) {
                                 var objResult = {};
                                 if (err) {
-                                    res.statusCode = 202;
-                                    res.send(errorMsg(err, 202));
-                                    auditlog(req, errorMsg(err, 202));
+                                    res.statusCode = 500;
+                                    res.send(errorMsg(err, 500));
+                                    auditlogRes(req, 500, err);
                                 } else {
                                     res.statusCode = 200;
-                                    res.send("Updated Successfully");
-                                    auditlog(req, "Updated Successfully");
+                                    res.send(successMessage("Tracker record Updated Successfully", 200));
+                                    auditlogRes(req, 200, successMessage("Tracker record Updated Successfully", 200));
                                 }
                             });
                         } else {
-                            console.log('Location Name :' + response[0].formattedAddress);
-                            console.log('Before updated data' + JSON.stringify(updatedData));
                             req.body.trackerData.tracker[0].location = response[0].formattedAddress;
                             updatedData.tracker.push(req.body.trackerData.tracker[0]);
-
-                            console.log('updated data' + JSON.stringify(updatedData));
 
                             var query1 = '';
 
@@ -589,13 +396,13 @@ function updateTracerCas(req, res) {
                             client.execute(query1, params1,{ prepare: true }, function(err, result) {
                                 var objResult = {};
                                 if (err) {
-                                    res.statusCode = 202;
-                                    res.send(errorMsg(err, 202));
-                                    auditlog(req, errorMsg(err, 202));
+                                    res.statusCode = 500;
+                                    res.send(errorMsg(err, 500));
+                                    auditlogRes(req, 500, err);
                                 } else {
                                     res.statusCode = 200;
-                                    res.send("Updated Successfully");
-                                    auditlog(req, "Updated Successfully");
+                                    res.send(successMessage("Tracker record Updated Successfully", 200));
+                                    auditlogRes(req, 200, successMessage("Tracker record Updated Successfully", 200));
                                 }
                             });
                         }
@@ -605,7 +412,6 @@ function updateTracerCas(req, res) {
         }); 
     } else {
         if (req.body.trackerName) {
-            console.log('Inside updateTracerCas Inside');
 
             query = 'insert into tracker(uid, trackerid, isalive, trackerdata, createdtime, trackername) values(?, ?, ?, textAsBlob(?), ?, ?);';
 
@@ -625,14 +431,14 @@ function updateTracerCas(req, res) {
 
                     client.execute(query, params,{ prepare: true}, function(err, result) {
                         if (err) {
-                            res.statusCode = 202;
-                            res.send(errorMsg(err, 202));
-                            auditlog(req, "Try Again");
+                            res.statusCode = 500;
+                            res.send(errorMsg(err, 500));
+                            auditlogRes(req, 500, err);
                         } else {
                             req.body.trackerId = uuid5;
                             res.statusCode = 200;
                             res.send(req.body);
-                            auditlog(req, "Success Created first Record");
+                            auditlogRes(req, 200, successMessage("Created first record for tracker", 200));
                         }
                     });
                 } else {
@@ -642,14 +448,14 @@ function updateTracerCas(req, res) {
 
                     client.execute(query, params,{ prepare: true}, function(err, result) {
                         if (err) {
-                            res.statusCode = 202;
-                            res.send(errorMsg(err, 202));
-                            auditlog(req, "Try Again");
+                            res.statusCode = 500;
+                            res.send(errorMsg(err, 500));
+                            auditlogRes(req, 500, err);
                         } else {
                             req.body.trackerId = uuid5;
                             res.statusCode = 200;
                             res.send(req.body);
-                            auditlog(req, "Success Created first Record");
+                            auditlogRes(req, 200, successMessage("Created first record for tracker", 200));
                         }
                     });
                 }
@@ -657,8 +463,7 @@ function updateTracerCas(req, res) {
         } else {
             res.statusCode = 400;
             res.send(errorMsg("No Tracker Name", 400));
-            auditlog(req, "No Tracker Name");
-
+            auditlogRes(req, 400, "No Tracker Name");
         }
     }
 }
@@ -697,9 +502,9 @@ function getSubscription(req, res) {
 
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
-            res.statusCode = 202;
-            res.send(errorMsg(err, 202));
-            auditlog(req, "Try Again");
+            res.statusCode = 500;
+            res.send(errorMsg(err, 500));
+            auditlogRes(req, 500, err);
         } else {
             if (result.rows.length > 0) {
                 var obj = {};
@@ -709,11 +514,11 @@ function getSubscription(req, res) {
                 obj.notification = result.rows[0].notification
                 res.statusCode = 200;
                 res.send(obj);
-                auditlog(req, "Get Successfully");
+                auditlogRes(req, 200, successMessage("Get Subscription Successful", 200));
             } else {
                 res.statusCode = 404;
                 res.send(errorMsg("No Record Found", 404));
-                auditlog(req, "No Record Found");
+                auditlogRes(req, 404, "No Notification Record Found");
             }
         }
     });
@@ -730,13 +535,13 @@ function putSubscription(req, res) {
 
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
-            res.statusCode = 202;
-            res.send(errorMsg(err, 202));
-            auditlog(req, "Try Again");
+            res.statusCode = 500;
+            res.send(errorMsg(err, 500));
+            auditlogRes(req, 500, err);
         } else {
             res.statusCode = 200;
             res.send(successMessage("Success", 200));
-            auditlog(req, "Successfully");
+            auditlogRes(req, 200, successMessage("Put Subscription Successful", 200));
         }
     });
 }
@@ -751,13 +556,13 @@ function deleteSubscription(req, res) {
 
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
-            res.statusCode = 202;
-            res.send(errorMsg(err, 202));
-            auditlog(req, "Try Again");
+            res.statusCode = 500;
+            res.send(errorMsg(err, 500));
+            auditlogRes(req, 500, err);
         } else {
             res.statusCode = 200;
             res.send(successMessage("Success Delete of record", 200));
-            auditlog(req, "Successfully");
+            auditlogRes(req, 200, successMessage("Delete Subscription Successful", 200));
         }
     });
 }
@@ -770,19 +575,15 @@ function inviteFriends(req, res) {
 
     params = [req.body.to];
 
-    console.log('invite body' + JSON.stringify(req.body));
-
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
-            console.log('invite error' + err);
-            res.statusCode = 202;
-            res.send(errorMsg(err, 202));
-            auditlog(req, "Try Again");
+            res.statusCode = 500;
+            res.send(errorMsg(err, 500));
+            auditlogRes(req, 500, err);
         } else {
             if (result.rows.length > 0) {
                 var touuid = result.rows[0].uid;
                 var deviceid = result.rows[0].devicetoken;
-
 
                 query = 'select trackeruser from trackmapuser where uid = ? and trackeruser = ?';
 
@@ -790,15 +591,14 @@ function inviteFriends(req, res) {
 
                 client.execute(query, params,{ prepare: true}, function(err, result) {
                     if (err) {
-                        console.log('invite error' + err);
-                        res.statusCode = 202;
-                        res.send(errorMsg(err, 202));
-                        auditlog(req, "Try Again");
+                        res.statusCode = 500;
+                        res.send(errorMsg(err, 500));
+                        auditlogRes(req, 500, err);
                     } else {
                         if (result.rows.length > 0) { 
                             res.statusCode = 201;
                             res.send(errorMsg("Already Invite Sent", 201));
-                            auditlog(req, "Already Invite Sent");
+                            auditlogRes(req, 201, "Already Invite Sent");
                             return;
                         } else {
                             var queries = [
@@ -810,10 +610,9 @@ function inviteFriends(req, res) {
 
                             client.batch(queries,{ prepare: true}, function(err1) {
                                 if (err1) {
-                                    console.log('invite error' + err1);
-                                    res.statusCode = 202;
-                                    res.send(errorMsg(err, 202));
-                                    auditlog(req, "Try Again");
+                                    res.statusCode = 500;
+                                    res.send(errorMsg(err, 500));
+                                    auditlogRes(req, 500, err);
                                 } else {
                                     var message = {};
                                     message.toDeviceId = deviceid;
@@ -827,13 +626,13 @@ function inviteFriends(req, res) {
 
                                     rn.sendInviteNotification(message, function(err, response){
                                         if (err) {
-                                            res.statusCode = 202;
-                                            res.send(errorMsg(err, 202));
-                                            auditlog(req, "Try Again");
+                                            res.statusCode = 500;
+                                            res.send(errorMsg(err, 500));
+                                            auditlogRes(req, 500, err);
                                         } else {
                                             res.statusCode = 200;
                                             res.send(successMessage("Success Invite of User", 200));
-                                            auditlog(req, "Successfully Invitated");
+                                            auditlogRes(req, 200, successMessage("Successful Invite of user", 200));
                                         }
                                     });
                                 }
@@ -842,10 +641,9 @@ function inviteFriends(req, res) {
                     }
                 });
             } else {
-                console.log('invite error' + err);
                 res.statusCode = 404;
                 res.send(errorMsg("User not part of lastnyte app", 404));
-                auditlog(req, "User not part of lastnyte app");
+                auditlogRes(req, 404, "User not part of lastnyte app");
             }
         }
     });
@@ -854,7 +652,6 @@ function inviteFriends(req, res) {
 function AcceptFriends(req, res) {
     var query = '';
     var params = [];
-    console.log('accept body' + JSON.stringify(req.body));
 
     query = 'select devicetoken from usersdevicedetails where uid = ?';
 
@@ -862,10 +659,9 @@ function AcceptFriends(req, res) {
 
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
-            console.log('invite error' + err);
-            res.statusCode = 202;
-            res.send(errorMsg(err, 202));
-            auditlog(req, "Try Again");
+            res.statusCode = 500;
+            res.send(errorMsg(err, 500));
+            auditlogRes(req, 500, err);
         } else {
             if (result.rows.length > 0) {
                 var queries = [
@@ -881,10 +677,9 @@ function AcceptFriends(req, res) {
                 
                 client.batch(queries,{ prepare: true}, function(err) {
                     if (err) {
-                        console.log('accept error' + err);
-                        res.statusCode = 202;
-                        res.send(errorMsg(err, 202));
-                        auditlog(req, "Try Again");
+                        res.statusCode = 500;
+                        res.send(errorMsg(err, 500));
+                        auditlogRes(req, 500, err);
                     } else {
                         var message = {};
                         message.toDeviceId = result.rows[0].devicetoken;
@@ -896,14 +691,13 @@ function AcceptFriends(req, res) {
 
                         rn.sendInviteNotification(message, function(err1, response1){
                             if (err1) {
-                                console.log('accept error' + err1);
-                                res.statusCode = 202;
-                                res.send(errorMsg(err, 202));
-                                auditlog(req, "Try Again");
+                                res.statusCode = 500;
+                                res.send(errorMsg(err, 500));
+                                auditlogRes(req, 500, err);
                             } else {
                                 res.statusCode = 200;
                                 res.send(successMessage("Success Accept of User", 200));
-                                auditlog(req, "Successfully Accept Invitation");
+                                auditlogRes(req, 200, successMessage("Successful Accept of user", 200));
                             }
                         });
                     }
@@ -912,7 +706,7 @@ function AcceptFriends(req, res) {
                 console.log('invite error' + err);
                 res.statusCode = 404;
                 res.send(errorMsg("User not part of lastnyte app", 404));
-                auditlog(req, "User not part of lastnyte app");
+                auditlogRes(req, 404, errorMsg("User not part of lastnyte app", 404));
             }
         }
     });
@@ -928,10 +722,9 @@ function getTackFriends(req, res) {
 
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
-            console.log('accept error' + err);
-            res.statusCode = 202;
-            res.send(errorMsg(err, 202));
-            auditlog(req, "Try Again");
+            res.statusCode = 500;
+            res.send(errorMsg(err, 500));
+            auditlogRes(req, 500, err);
         } else {
             if (result.rows.length > 0) {
                 var arrUsers = "";
@@ -948,10 +741,9 @@ function getTackFriends(req, res) {
 
                 client.execute(query, params,{ prepare: true}, function(err, result1) {
                     if (err) {
-                        console.log('accept error' + err);
-                        res.statusCode = 202;
-                        res.send(errorMsg(err, 202));
-                        auditlog(req, "Try Again");
+                        res.statusCode = 500;
+                        res.send(errorMsg(err, 500));
+                        auditlogRes(req, 500, err);
                     } 
                     else {
                         var objarr = [];
@@ -971,13 +763,13 @@ function getTackFriends(req, res) {
                         obj.friends = objarr;
                         res.statusCode = 200;
                         res.send(obj);
-                        auditlog(req, "Final Users Sent");
+                        auditlogRes(req, 200, successMessage("Successful getting of track user", 200));
                     }
                 });
             } else {
                 res.statusCode = 404;
                 res.send(errorMsg("No users found", 404));
-                auditlog(req, "No users found");
+                auditlogRes(req, 404, errorMsg("No users found", 404));
             }
         }
     });
@@ -993,10 +785,9 @@ function getTackFriendsLocation(req, res) {
 
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
-            console.log('accept error' + err);
-            res.statusCode = 202;
-            res.send(errorMsg(err, 202));
-            auditlog(req, "Try Again");
+            res.statusCode = 500;
+            res.send(errorMsg(err, 500));
+            auditlogRes(req, 500, err);
         } else {
             if (result.rows.length > 0) {
                 var arrUsers = "";
@@ -1014,9 +805,9 @@ function getTackFriendsLocation(req, res) {
                 client.execute(query, params,{ prepare: true}, function(err, result) {
                     if (err) {
                         console.log('accept error' + err);
-                        res.statusCode = 202;
-                        res.send(errorMsg(err, 202));
-                        auditlog(req, "Try Again");
+                        res.statusCode = 500;
+                        res.send(errorMsg(err, 500));
+                        auditlogRes(req, 500, err);
                     } 
                     else {
                         console.log(result.rows);
@@ -1024,13 +815,13 @@ function getTackFriendsLocation(req, res) {
                         obj.friends = result.rows;
                         res.statusCode = 200;
                         res.send(obj);
-                        auditlog(req, "Final Users Sent");
+                        auditlogRes(req, 200, successMessage("Successful getting of track user location", 200));
                     }
                 });
             } else {
                 res.statusCode = 404;
                 res.send(errorMsg("No users found", 404));
-                auditlog(req, "No users found");
+                auditlogRes(req, 404, errorMsg("No users found", 404));
             }
         }
     });
@@ -1047,13 +838,13 @@ function updateUserLocation(req, res) {
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
             console.log('accept error' + err);
-            res.statusCode = 202;
-            res.send(errorMsg(err, 202));
-            auditlog(req, "Try Again");
+            res.statusCode = 500;
+            res.send(errorMsg(err, 500));
+            auditlogRes(req, 500, err);
         } else {
             res.statusCode = 200;
             res.send(successMessage("Success Update of user location", 200));
-            auditlog(req, "Success Update of user location");
+            auditlogRes(req, 200, successMessage("Successful update of track user location", 200));
         }
     });
 }
@@ -1068,10 +859,9 @@ function getUserLocation(req, res) {
 
     client.execute(query, params,{ prepare: true}, function(err, result) {
         if (err) {
-            console.log('accept error' + err);
-            res.statusCode = 202;
-            res.send(errorMsg(err, 202));
-            auditlog(req, "Try Again");
+            res.statusCode = 500;
+            res.send(errorMsg(err, 500));
+            auditlogRes(req, 500, err);
         } else {
             if (result.rows.length > 0) {
                 var obj = {};
@@ -1080,11 +870,11 @@ function getUserLocation(req, res) {
                 obj.createdTime = result.rows[0].createdTime;
                 res.statusCode = 200;
                 res.send(obj);
-                auditlog(req, "Success getting of user location");
+                auditlogRes(req, 200, successMessage("Success getting of user location", 200));
             } else {
                 res.statusCode = 404;
                 res.send(errorMsg("No users found", 404));
-                auditlog(req, "No users found");
+                auditlogRes(req, 404, errorMsg("No users found", 404));
             }
         }
     });
@@ -1102,14 +892,16 @@ function sendEmailLastNyte(to, code) {
 
     transporter.sendMail(mailOptions, function(error, info){
         if(error){
-            res.statusCode = 400;
+            res.statusCode = 500;
             res.send(error);
-            return console.log(error);
+            auditlogRes(req, 500, error);
+            return;
         }
     });
 }
 
 
+module.exports.deleteUser = deleteUser;
 module.exports.verificationUser = verificationUser;
 module.exports.sendEmailLastNyte = sendEmailLastNyte;
 module.exports.getUserLocation = getUserLocation;
@@ -1117,15 +909,6 @@ module.exports.updateUserLocation = updateUserLocation;
 module.exports.getTackFriends = getTackFriends;
 module.exports.AcceptFriends = AcceptFriends;
 module.exports.inviteFriends = inviteFriends;
-module.exports.getUserbyId = getUserbyId;
-module.exports.addUser = addUser;
-module.exports.deleteUserbyId = deleteUserbyId;
-module.exports.login = login;
-module.exports.register = register;
-module.exports.savePicture = savePicture;
-module.exports.getPicture = getPicture;
-module.exports.updateTracker = updateTracker;
-module.exports.getTracker = getTracker;
 module.exports.insertUser = insertUser;
 module.exports.updateTracerCas = updateTracerCas;
 module.exports.getLastTracker = getLastTracker;
