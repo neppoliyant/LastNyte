@@ -712,6 +712,31 @@ function AcceptFriends(req, res) {
     });
 }
 
+function DeleteTrackFriends(req, res) {
+    var queries = [
+                  {
+                    query: 'delete from trackmapuser where uid = ? and trackeruser = ?;',
+                    params: [req.params.uid, req.params.toid]
+                  },
+                  {
+                    query: 'delete from trackmapuser where uid = ? and trackeruser = ?;',
+                    params: [req.params.toid, req.params.uid]
+                  }
+                ];
+    
+    client.batch(queries,{ prepare: true}, function(err) {
+        if (err) {
+            res.statusCode = 500;
+            res.send(errorMsg(err, 500));
+            auditlogRes(req, 500, err);
+        } else {
+            res.statusCode = 200;
+            res.send(successMessage("Success Deletion of track User", 200));
+            auditlogRes(req, 200, successMessage("Success Deletion of track User", 200));
+        }
+    });
+}
+
 function getTackFriends(req, res) {
     var query = '';
     var params = [];
@@ -900,7 +925,29 @@ function sendEmailLastNyte(to, code) {
     });
 }
 
+function updateTrackerTimer(req, res) {
+    var query = '';
+    var params = [];
 
+    query = 'update users set tracktime = ? where uid = ? and email = ?;';
+
+    params = [req.body.tracktime, req.body.uid, req.body.email];
+
+    client.execute(query, params,{ prepare: true}, function(err, result) {
+        if (err) {
+            res.statusCode = 500;
+            res.send(errorMsg(err, 500));
+            auditlogRes(req, 500, err);
+        } else {
+            res.statusCode = 200;
+            res.send(successMessage("Success update of track time", 200));
+            auditlogRes(req, 200, successMessage("Success getting of user location", 200));
+        }
+    });
+}
+
+module.exports.updateTrackerTimer = updateTrackerTimer;
+module.exports.DeleteTrackFriends = DeleteTrackFriends;
 module.exports.deleteUser = deleteUser;
 module.exports.verificationUser = verificationUser;
 module.exports.sendEmailLastNyte = sendEmailLastNyte;

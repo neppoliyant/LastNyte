@@ -45,65 +45,60 @@ module.exports = function() {
     });
 
     app.put('/lastnytepicture/:id', function(req, res, next) {
-        console.log('user id : ' + req.params.id);
         user.saveLastNytePicture(req, res);
     });
 
     app.get('/lastnytepicture/:id', function(req, res, next) {
-        console.log('user id : ' + req.params.id);
         user.getLastNytePicture(req, res);
     });
 
     app.put('/lastnyte/rn/:id', function(req, res, next) {
-        console.log('device id : ' + req.params.id);
-        console.log(__dirname);
         rn.sendNotificationtoDevice(req, res);
     });
 
     //Notification
     app.get('/lastnyte/subscription/:id/:uid', function(req, res, next) {
-        console.log('device token id : ' + req.params.id);
-        console.log('user id : ' + req.params.uid);
         user.getSubscription(req, res);
     });
 
     app.put('/lastnyte/subscription/:id/:uid', function(req, res, next) {
-        console.log('device id : ' + req.params.id);
         user.putSubscription(req, res);
     });
 
     app.delete('/lastnyte/subscription/:id/:uid', function(req, res, next) {
-        console.log('device id : ' + req.params.id);
         user.deleteSubscription(req, res);
     });
 
     app.put('/lastnyte/invitefriends/:uid', function(req, res, next) {
-        console.log('device id : ' + req.params.uid);
         user.inviteFriends(req, res);
     });
 
     app.put('/lastnyte/acceptfriends/:uid', function(req, res, next) {
-        console.log('device id : ' + req.params.uid);
         user.AcceptFriends(req, res);
     });
 
     app.get('/lastnyte/gettrackfriends/:uid', function(req, res, next) {
-        console.log('user id : ' + req.params.uid);
         user.getTackFriends(req, res);
     });
 
     app.put('/lastnyte/userlocation/:uid', function(req, res, next) {
-        console.log('device id : ' + req.params.uid);
         user.updateUserLocation(req, res);
     });
 
     app.get('/lastnyte/userlocation/:uid', function(req, res, next) {
-        console.log('user id : ' + req.params.uid);
         user.getUserLocation(req, res);
     });
 
     app.get('/lastnyte/validateuser/:uid', function(req, res, next) {
         user.verificationUser(req, res);
+    });
+
+    app.delete('/lastnyte/trackfriends/:uid/:toid', function(req, res, next) {
+        user.DeleteTrackFriends(req, res);
+    });
+
+    app.put('/lastnyte/updatetrackertime', function(req, res, next) {
+        user.updateTrackerTimer(req, res);
     });
 
 	return app;
