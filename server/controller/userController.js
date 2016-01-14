@@ -234,6 +234,7 @@ function getUser(req, res) {
             obj.email = result.rows[0].email;
             obj.uid = result.rows[0].uid;
             obj.verified = result.rows[0].verified;
+            obj.tracktime = result.rows[0].tracktime;
             res.statusCode = 200;
             res.send(obj);
             auditlogRes(req, 200, successMessage("Success getting of user details", 200));
@@ -930,6 +931,27 @@ function updateTrackerTimer(req, res) {
     var params = [];
 
     query = 'update users set tracktime = ? where uid = ? and email = ?;';
+
+    params = [req.body.tracktime, req.body.uid, req.body.email];
+
+    client.execute(query, params,{ prepare: true}, function(err, result) {
+        if (err) {
+            res.statusCode = 500;
+            res.send(errorMsg(err, 500));
+            auditlogRes(req, 500, err);
+        } else {
+            res.statusCode = 200;
+            res.send(successMessage("Success update of track time", 200));
+            auditlogRes(req, 200, successMessage("Success getting of user location", 200));
+        }
+    });
+}
+
+function notifyUser() {
+    var query = '';
+    var params = [];
+
+    query = 'select * from ';
 
     params = [req.body.tracktime, req.body.uid, req.body.email];
 
