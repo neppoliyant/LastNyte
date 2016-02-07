@@ -100,6 +100,5 @@ module.exports = function() {
     app.put('/lastnyte/updatetrackertime', function(req, res, next) {
         user.updateTrackerTimer(req, res);
     });
-
 	return app;
 }();
