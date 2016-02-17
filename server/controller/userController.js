@@ -977,6 +977,63 @@ function notifyUser() {
     });
 }
 
+function sendMessage(req, res) {
+    var query = '';
+    var params = [];
+
+    query = 'select devicetoken from usersdevicedetails where uid = ?';
+
+    params = [req.body.touid];
+
+    client.execute(query, params,{ prepare: true}, function(err, result) {
+        if (err) {
+            res.statusCode = 500;
+            res.send(errorMsg(err, 500));
+            auditlogRes(req, 500, err);
+        } else {
+            if (result.rows.length > 0) {
+                var deviceid = result.rows[0].devicetoken;
+
+                query = 'insert into lastnyte.messages(fromuid, touid, createdtime, msg, read) values(?,?,?,?,?);';
+
+                params = [req.body.fromuid, req.body.touid, req.body.createdtime, req.body.msg, "false"];
+
+                client.execute(query, params,{ prepare: true}, function(err, result) {
+                    if (err) {
+                        res.statusCode = 500;
+                        res.send(errorMsg(err, 500));
+                        auditlogRes(req, 500, err);
+                    } else {
+                        var message = {};
+                        message.toDeviceId = deviceid;
+                        message.message = req.body.msg;
+                        message.from = req.body.name;
+                        message.fromuuid = req.body.fromuid;
+                        message.touuid = req.body.touid;
+                        message.topic = "Message";                                                                                   
+
+                        rn.sendInviteNotification(message, function(err, response){
+                            if (err) {
+                                res.statusCode = 500;
+                                res.send(errorMsg(err, 500));
+                                auditlogRes(req, 500, err);
+                            } else {
+                                res.statusCode = 200;
+                                res.send(successMessage("Success Invite of User", 200));
+                                auditlogRes(req, 200, successMessage("Successful Invite of user", 200));
+                            }
+                        });
+                    }
+                });
+            } else {
+                res.statusCode = 404;
+                res.send(errorMsg("User not part of lastnyte app", 404));
+                auditlogRes(req, 404, "User not part of lastnyte app");
+            }
+        }
+    });
+}
+
 module.exports.updateTrackerTimer = updateTrackerTimer;
 module.exports.DeleteTrackFriends = DeleteTrackFriends;
 module.exports.deleteUser = deleteUser;
@@ -998,4 +1055,5 @@ module.exports.getLastNytePicture = getLastNytePicture;
 module.exports.deleteSubscription = deleteSubscription;
 module.exports.putSubscription = putSubscription;
 module.exports.getSubscription = getSubscription;
+module.exports.sendMessage = sendMessage;
 
