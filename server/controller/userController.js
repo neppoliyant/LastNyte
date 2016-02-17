@@ -35,8 +35,8 @@ var transporter = nodemailer.createTransport(smtpTransport({
     secureConnection : false,
     port: 587,
     auth : {
-        user : "YourEmail",
-        pass : "YourEmailPassword"
+        user : "neppoliyant@gmail.com",
+        pass : "fire@2828"
     }
 }));
 
