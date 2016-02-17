@@ -17,7 +17,7 @@ var rn = require('./remoteNotification.js');
 var TimeUuid = require('cassandra-driver').types.TimeUuid;
 var crypto = require('crypto');
 
-var client = new cassandra.Client({contactPoints: ['96.119.183.251'], keyspace: 'lastnyte'});
+var client = new cassandra.Client({contactPoints: [config.cassandraDB], keyspace: 'lastnyte'});
 
 //var transporter = nodemailer.createTransport('smtps:virpal.v.singh@gmail.com:Lastnyte1@smtp.gmail.com');
 

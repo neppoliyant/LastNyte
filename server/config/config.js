@@ -25,6 +25,7 @@ module.exports = {
     connectorUrl: "http://96.119.5.107:3000/rest/user/neps",
     swaggerBaseUrl: "http://96.119.5.107:3000/rest",
     swaggerDocUrl: "http://96.119.5.107:3000",
+    cassandraDB: "96.119.183.221",
     couchBase: {
         server: 'localhost:8091',
         bucketName: 'bodyBuilding',
