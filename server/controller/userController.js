@@ -918,9 +918,7 @@ function sendEmailLastNyte(to, code) {
 
     transporter.sendMail(mailOptions, function(error, info){
         if(error){
-            res.statusCode = 500;
-            res.send(error);
-            auditlogRes(req, 500, error);
+            console.log(error);
             return;
         }
     });
