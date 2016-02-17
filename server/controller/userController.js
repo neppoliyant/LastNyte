@@ -99,12 +99,12 @@ function insertUser(req, res) {
             } else {
                 var verificationCode = randomValueHex(6);
 
-                query = 'insert into lastnyte.users(uid, email, firstname, lastname, password, createdtime, verificationcode, verified) values(?,?,?,?,?,?,?,?);';
+                query = 'insert into lastnyte.users(uid, email, firstname, lastname, password, createdtime, verificationcode, verified, tracktime) values(?,?,?,?,?,?,?,?,?);';
 
                 var uuid5 = TimeUuid.fromDate(new Date());
                 req.body.uid = uuid5;
 
-                params = [uuid5.toString(), req.body.email, req.body.firstname, req.body.lastname, req.body.password, req.body.createdTime, verificationCode, "false"];
+                params = [uuid5.toString(), req.body.email, req.body.firstname, req.body.lastname, req.body.password, req.body.createdTime, verificationCode, "false", "1"];
                 client.execute(query, params,{ prepare: true}, function(err) {
                   if (err) {
                     res.statusCode = 500;
