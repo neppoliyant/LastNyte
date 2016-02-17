@@ -16,18 +16,29 @@ var geocoder = require('node-geocoder')('google', 'http', null);
 var rn = require('./remoteNotification.js');
 var TimeUuid = require('cassandra-driver').types.TimeUuid;
 var crypto = require('crypto');
+var smtpTransport = require("nodemailer-smtp-transport")
 
 var client = new cassandra.Client({contactPoints: [config.cassandraDB], keyspace: 'lastnyte'});
 
 //var transporter = nodemailer.createTransport('smtps:virpal.v.singh@gmail.com:Lastnyte1@smtp.gmail.com');
 
-var transporter = nodemailer.createTransport("SMTP", {
+var smpttransporter = nodemailer.createTransport("SMTP", {
 service: "Gmail",
 auth: {
     user: "neppoliyant@gmail.com",
     pass: "fire@2828"
 }
 });
+
+var transporter = nodemailer.createTransport(smtpTransport({
+    host : "smtp.gmail.com",
+    secureConnection : false,
+    port: 587,
+    auth : {
+        user : "YourEmail",
+        pass : "YourEmailPassword"
+    }
+}));
 
 function randomValueHex (len) {
     return crypto.randomBytes(Math.ceil(len/2))
