@@ -104,5 +104,9 @@ module.exports = function() {
     app.put('/lastnyte/messages', function(req, res, next) {
         user.sendMessage(req, res);
     });
+
+    app.put('/lastnyte/updatemessage', function(req, res, next) {
+        user.messageRead(req, res);
+    });
 	return app;
 }();

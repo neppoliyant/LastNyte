@@ -1006,7 +1006,7 @@ function sendMessage(req, res) {
                     } else {
                         var message = {};
                         message.toDeviceId = deviceid;
-                        message.message = req.body.msg;
+                        message.message = req.body.name + ": " + req.body.msg;
                         message.from = req.body.name;
                         message.fromuuid = req.body.fromuid;
                         message.touuid = req.body.touid;
@@ -1019,8 +1019,8 @@ function sendMessage(req, res) {
                                 auditlogRes(req, 500, err);
                             } else {
                                 res.statusCode = 200;
-                                res.send(successMessage("Success Invite of User", 200));
-                                auditlogRes(req, 200, successMessage("Successful Invite of user", 200));
+                                res.send(successMessage("Success Addition of Message", 200));
+                                auditlogRes(req, 200, successMessage("Success Addition of Message", 200));
                             }
                         });
                     }
@@ -1030,6 +1030,27 @@ function sendMessage(req, res) {
                 res.send(errorMsg("User not part of lastnyte app", 404));
                 auditlogRes(req, 404, "User not part of lastnyte app");
             }
+        }
+    });
+}
+
+function messageRead(req, res) {
+    var query = '';
+    var params = [];
+
+    query = 'update lastnyte.messages set read = ? where fromuid = ? and touid = ? and createdtime = ?';
+
+    params = ["true", req.body.fromuid, req.body.touid, req.body.createdtime];
+
+    client.execute(query, params,{ prepare: true}, function(err, result) {
+        if (err) {
+            res.statusCode = 500;
+            res.send(errorMsg(err, 500));
+            auditlogRes(req, 500, err);
+        } else {
+            res.statusCode = 200;
+            res.send(successMessage("Success Update of Message", 200));
+            auditlogRes(req, 200, successMessage("Success Update of Message", 200));
         }
     });
 }
@@ -1056,4 +1077,5 @@ module.exports.deleteSubscription = deleteSubscription;
 module.exports.putSubscription = putSubscription;
 module.exports.getSubscription = getSubscription;
 module.exports.sendMessage = sendMessage;
+module.exports.messageRead = messageRead;
 
