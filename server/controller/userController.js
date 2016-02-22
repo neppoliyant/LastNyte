@@ -359,66 +359,72 @@ function updateTracerCas(req, res) {
 
                     var location = getLocationName(req.body.trackerData.tracker[0].lat, req.body.trackerData.tracker[0].long);
 
-                    geocoder.reverse({lat:req.body.trackerData.tracker[0].lat, lon:req.body.trackerData.tracker[0].long}, function(err, response) {
-                        if (err) {
+                    if (req.body.trackerData.tracker[0].lat == "0.00000000") {
+                        res.statusCode = 200;
+                        res.send(successMessage("Invalid location", 200));
+                        auditlogRes(req, 200, successMessage("Invalid location", 200));
+                    } else {
+                        geocoder.reverse({lat:req.body.trackerData.tracker[0].lat, lon:req.body.trackerData.tracker[0].long}, function(err, response) {
+                            if (err) {
 
-                            updatedData.tracker.push(req.body.trackerData.tracker[0]);
+                                updatedData.tracker.push(req.body.trackerData.tracker[0]);
 
-                            var query1 = '';
+                                var query1 = '';
 
-                            var params1 = [];
+                                var params1 = [];
 
-                            if (req.body.isAlive == "false") { 
-                                query1 = 'update tracker set trackerdata = textAsBlob(?), isAlive=? where uid = ? and trackerid = ?;';
-                                params1 = [JSON.stringify(updatedData), false, req.body.uid, req.body.trackerId];
-                            } else {
-                                query1 = 'update tracker set trackerdata = textAsBlob(?) where uid = ? and trackerid = ?;';
-                                params1 = [JSON.stringify(updatedData), req.body.uid, req.body.trackerId];
-                            }
-
-                            client.execute(query1, params1,{ prepare: true }, function(err, result) {
-                                var objResult = {};
-                                if (err) {
-                                    res.statusCode = 500;
-                                    res.send(errorMsg(err, 500));
-                                    auditlogRes(req, 500, err);
+                                if (req.body.isAlive == "false") { 
+                                    query1 = 'update tracker set trackerdata = textAsBlob(?), isAlive=? where uid = ? and trackerid = ?;';
+                                    params1 = [JSON.stringify(updatedData), false, req.body.uid, req.body.trackerId];
                                 } else {
-                                    res.statusCode = 200;
-                                    res.send(successMessage("Tracker record Updated Successfully", 200));
-                                    auditlogRes(req, 200, successMessage("Tracker record Updated Successfully", 200));
+                                    query1 = 'update tracker set trackerdata = textAsBlob(?) where uid = ? and trackerid = ?;';
+                                    params1 = [JSON.stringify(updatedData), req.body.uid, req.body.trackerId];
                                 }
-                            });
-                        } else {
-                            req.body.trackerData.tracker[0].location = response[0].formattedAddress;
-                            updatedData.tracker.push(req.body.trackerData.tracker[0]);
 
-                            var query1 = '';
-
-                            var params1 = [];
-
-                            if (req.body.isAlive == "false") { 
-                                console.log('is Alive false' + req.body.isAlive);
-                                query1 = 'update tracker set trackerdata = textAsBlob(?), isAlive=? where uid = ? and trackerid = ?;';
-                                params1 = [JSON.stringify(updatedData), false, req.body.uid, req.body.trackerId];
+                                client.execute(query1, params1,{ prepare: true }, function(err, result) {
+                                    var objResult = {};
+                                    if (err) {
+                                        res.statusCode = 500;
+                                        res.send(errorMsg(err, 500));
+                                        auditlogRes(req, 500, err);
+                                    } else {
+                                        res.statusCode = 200;
+                                        res.send(successMessage("Tracker record Updated Successfully", 200));
+                                        auditlogRes(req, 200, successMessage("Tracker record Updated Successfully", 200));
+                                    }
+                                });
                             } else {
-                                query1 = 'update tracker set trackerdata = textAsBlob(?) where uid = ? and trackerid = ?;';
-                                params1 = [JSON.stringify(updatedData), req.body.uid, req.body.trackerId];
-                            }
+                                req.body.trackerData.tracker[0].location = response[0].formattedAddress;
+                                updatedData.tracker.push(req.body.trackerData.tracker[0]);
 
-                            client.execute(query1, params1,{ prepare: true }, function(err, result) {
-                                var objResult = {};
-                                if (err) {
-                                    res.statusCode = 500;
-                                    res.send(errorMsg(err, 500));
-                                    auditlogRes(req, 500, err);
+                                var query1 = '';
+
+                                var params1 = [];
+
+                                if (req.body.isAlive == "false") { 
+                                    console.log('is Alive false' + req.body.isAlive);
+                                    query1 = 'update tracker set trackerdata = textAsBlob(?), isAlive=? where uid = ? and trackerid = ?;';
+                                    params1 = [JSON.stringify(updatedData), false, req.body.uid, req.body.trackerId];
                                 } else {
-                                    res.statusCode = 200;
-                                    res.send(successMessage("Tracker record Updated Successfully", 200));
-                                    auditlogRes(req, 200, successMessage("Tracker record Updated Successfully", 200));
+                                    query1 = 'update tracker set trackerdata = textAsBlob(?) where uid = ? and trackerid = ?;';
+                                    params1 = [JSON.stringify(updatedData), req.body.uid, req.body.trackerId];
                                 }
-                            });
-                        }
-                    });
+
+                                client.execute(query1, params1,{ prepare: true }, function(err, result) {
+                                    var objResult = {};
+                                    if (err) {
+                                        res.statusCode = 500;
+                                        res.send(errorMsg(err, 500));
+                                        auditlogRes(req, 500, err);
+                                    } else {
+                                        res.statusCode = 200;
+                                        res.send(successMessage("Tracker record Updated Successfully", 200));
+                                        auditlogRes(req, 200, successMessage("Tracker record Updated Successfully", 200));
+                                    }
+                                });
+                            }
+                        });
+                    }
                 }
             }
         }); 
