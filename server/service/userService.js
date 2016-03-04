@@ -108,5 +108,16 @@ module.exports = function() {
     app.put('/lastnyte/updatemessage', function(req, res, next) {
         user.messageRead(req, res);
     });
+
+    //Health check
+    app.get('/lastnyte/health.html', function(req, res, next) {
+      res.send('LastNyte App is running');   
+    });
+
+    //version check
+    app.get('/lastnyte/version.html', function(req, res, next) {
+      res.send('LastNyte App version is 1.0');   
+    });
+
 	return app;
 }();

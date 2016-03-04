@@ -40,6 +40,16 @@ var transporter = nodemailer.createTransport(smtpTransport({
     }
 }));
 
+var transporter1 = nodemailer.createTransport(smtpTransport({
+    host : "mail.onlinebodybuildingpro.com",
+    secureConnection : false,
+    port: 25,
+    auth : {
+        user : "lastnyte",
+        pass : "Star_2828"
+    }
+}));
+
 function randomValueHex (len) {
     return crypto.randomBytes(Math.ceil(len/2))
         .toString('hex') // convert to hexadecimal format
@@ -933,7 +943,7 @@ function sendEmailLastNyte(to, code) {
         html: '<b>Welcome to WhereAbouts</b> </br> </br><b> ' + msg + '</b>' // html body
     };
 
-    transporter.sendMail(mailOptions, function(error, info){
+    transporter1.sendMail(mailOptions, function(error, info){
         if(error){
             console.log(error);
             return;
